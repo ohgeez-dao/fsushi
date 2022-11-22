@@ -1,0 +1,30 @@
+# Node
+node_modules/
+
+# Yarn
+yarn-error.log
+
+# Hardhat
+cache/
+abis/
+artifacts/
+
+# Typechain
+typechain-types/
+
+# Env
+.env
+
+# Coverage
+coverage/
+coverage.json
+
+# Intellij
+.idea
+build/
+
+# ESLint
+.eslintcache
+
+# Dodoc
+docs
