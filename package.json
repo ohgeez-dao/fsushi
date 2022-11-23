@@ -114,5 +114,9 @@
     "ts-node": "^10.9.0",
     "typechain": "^8.1.0",
     "typescript": "^4.8.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.0",
+    "@sushiswap/core": "^1.4.2"
   }
 }
