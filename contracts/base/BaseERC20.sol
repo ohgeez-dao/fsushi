@@ -117,7 +117,7 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
         address from,
         address to,
         uint256 amount
-    ) private {
+    ) internal virtual {
         balanceOf[from] -= amount;
         balanceOf[to] += amount;
         emit Transfer(from, to, amount);
@@ -132,8 +132,25 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
         address owner,
         address spender,
         uint256 amount
-    ) private {
+    ) internal virtual {
         allowance[owner][spender] = amount;
         emit Approval(owner, spender, amount);
+    }
+
+    function _mint(address account, uint256 amount) internal virtual {
+        totalSupply += amount;
+        unchecked {
+            balanceOf[account] += amount;
+        }
+        emit Transfer(address(0), account, amount);
+    }
+
+    function _burn(address account, uint256 amount) internal virtual {
+        balanceOf[account] -= amount;
+        unchecked {
+            totalSupply -= amount;
+        }
+
+        emit Transfer(account, address(0), amount);
     }
 }

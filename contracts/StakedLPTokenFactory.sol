@@ -7,21 +7,27 @@ import "./interfaces/IStakedLPTokenFactory.sol";
 import "./StakedLPToken.sol";
 
 contract StakedLPTokenFactory is IStakedLPTokenFactory {
-    bytes32 public immutable override salt;
+    error TokenCreated();
+
     address public immutable override masterChef;
     address internal immutable implementation;
 
     mapping(uint256 => address) public tokens;
 
-    constructor(bytes32 _salt, address _masterChef) {
-        salt = _salt;
+    constructor(address _masterChef) {
         masterChef = _masterChef;
         StakedLPToken token = new StakedLPToken();
         implementation = address(token);
     }
 
+    function predictStakedLPTokenAddress(uint256 pid) external view override returns (address token) {
+        token = Clones.predictDeterministicAddress(implementation, bytes32(pid));
+    }
+
     function createStakedLPToken(uint256 pid) external override returns (address token) {
-        token = Clones.cloneDeterministic(implementation, salt);
+        if (tokens[pid] != address(0)) revert TokenCreated();
+
+        token = Clones.cloneDeterministic(implementation, bytes32(pid));
         StakedLPToken(token).initialize(pid);
 
         tokens[pid] = token;

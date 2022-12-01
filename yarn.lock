@@ -3528,7 +3528,7 @@ ethers@^4.0.40:
     uuid "2.0.1"
     xmlhttprequest "1.8.0"
 
-ethers@^5.5.3, ethers@^5.7.0, ethers@^5.7.1:
+ethers@^5.5.3, ethers@^5.6.1, ethers@^5.7.0, ethers@^5.7.1:
   version "5.7.2"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.7.2.tgz#3a7deeabbb8c030d4126b24f84e525466145872e"
   integrity sha512-wswUsmWo1aOK8rR7DIKiWSw9DbLWe6x98Jrn8wcTflTVvaXhAMaB5zGAXy0GYQEQp9iO1iSHWVyARQm11zUtyg==
@@ -4296,6 +4296,13 @@ hardhat-spdx-license-identifier@^2.0.0:
   resolved "https://registry.yarnpkg.com/hardhat-spdx-license-identifier/-/hardhat-spdx-license-identifier-2.0.3.tgz#6dd89a7e036ede4f7e86fb349eb23daaaad6890f"
   integrity sha512-G4u4I1md0tWaitX6Os7Nq9sYZ/CFdR+ibm7clCksGJ4yrtdHEZxgLjWpJ0WiALF9SoFKt03PwCe9lczDQ/5ADA==
 
+hardhat-tracer@^1.1.1:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/hardhat-tracer/-/hardhat-tracer-1.2.0.tgz#ba92bced3cd7130178c08ef6189cc5656e5cb727"
+  integrity sha512-54KV5cEScJCAg+VlSNs/xquKBxdlQF5gvtB3/P0ua1c4BEn8jVuwjaZpnOuC1ODWOKCRDgaHThKNTiP1Zp4FJw==
+  dependencies:
+    ethers "^5.6.1"
+
 hardhat-watcher@^2.5.0:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/hardhat-watcher/-/hardhat-watcher-2.5.0.tgz#3ee76c3cb5b99f2875b78d176207745aa484ed4a"
@@ -4303,10 +4310,10 @@ hardhat-watcher@^2.5.0:
   dependencies:
     chokidar "^3.5.3"
 
-hardhat@^2.12.0:
-  version "2.12.1"
-  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.12.1.tgz#28b0d7979b55eba379e7de5246240c121c399357"
-  integrity sha512-ihqYoaAKMceVWRcc3VddftFM7Q4/WL5Xan8nrklfDRwwST0W1rWWEE8SrxGikW58IJdREsC/HXVHs0zKfYpiCA==
+hardhat@^2.12.1-ir.0:
+  version "2.12.1-ir.0"
+  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.12.1-ir.0.tgz#4972a0777e5806cce6b54cf258c52570c58d141a"
+  integrity sha512-z5TGBaf3tpY92zcDmifPyYdQa1EGuLAcOlmqQUd0wR93Yua8UCdNyZHk+P2PNBJK4sm/DYt5d3DJbaFMN24sog==
   dependencies:
     "@ethersproject/abi" "^5.1.2"
     "@metamask/eth-sig-util" "^4.0.0"

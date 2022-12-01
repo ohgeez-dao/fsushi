@@ -7,6 +7,7 @@ import "hardhat-abi-exporter";
 import "hardhat-deploy";
 import "hardhat-gas-reporter";
 import "hardhat-spdx-license-identifier";
+import "hardhat-tracer";
 import "hardhat-watcher";
 import "solidity-coverage";
 import "@primitivefi/hardhat-dodoc";
