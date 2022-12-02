@@ -132,34 +132,13 @@ contract StakedLPToken is BaseERC20 {
     }
 
     function unstake(uint256 amount, address beneficiary) external {
-        _unstake(amount, beneficiary, msg.sender);
-    }
-
-    function unstakeSigned(
-        uint256 amount,
-        address beneficiary,
-        address from,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        IUniswapV2Pair(lpToken).permit(from, address(this), amount, deadline, v, r, s);
-        _unstake(amount, beneficiary, from);
-    }
-
-    function _unstake(
-        uint256 amount,
-        address beneficiary,
-        address from
-    ) public {
         IMasterChef(masterChef).withdraw(pid, amount);
         IERC20(lpToken).safeTransfer(beneficiary, amount);
 
-        _claimRewards(beneficiary, from);
-        _burn(from, amount);
+        _claimRewards(beneficiary, msg.sender);
+        _burn(msg.sender, amount);
 
-        emit Unstake(amount, beneficiary, from);
+        emit Unstake(amount, beneficiary, msg.sender);
     }
 
     function claimRewards(address beneficiary) external {
