@@ -1,15 +1,18 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
 import { StakedLPTokenFactory, StakedLPToken } from "../typechain-types";
+import setupTokens from "./utils/setupTokens";
 import setupSushiswap from "./utils/setupSushiswap";
 
 const setupTest = async () => {
-    const sushi = await setupSushiswap();
+    const tokens = await setupTokens();
+    const sushi = await setupSushiswap(tokens);
 
     const Factory = await ethers.getContractFactory("StakedLPTokenFactory");
     const factory = (await Factory.deploy(sushi.chef.address)) as StakedLPTokenFactory;
 
     return {
+        tokens,
         sushi,
         factory,
     };
@@ -17,11 +20,10 @@ const setupTest = async () => {
 
 describe("StakedLPTokenFactory", function () {
     it("should create StakedLPToken", async function () {
-        const { sushi, factory } = await setupTest();
+        const { tokens, sushi, factory } = await setupTest();
 
-        const tx = await sushi.factory.createPair(sushi.sushi.address, sushi.weth.address);
-        const receipt = await tx.wait();
-        const lpToken = await sushi.factory.getPair(sushi.sushi.address, sushi.weth.address);
+        await sushi.factory.createPair(tokens.sushi.address, tokens.weth.address);
+        const lpToken = await sushi.factory.getPair(tokens.sushi.address, tokens.weth.address);
         await sushi.chef.add(100, lpToken, false);
 
         await factory.createStakedLPToken(0);
@@ -32,7 +34,8 @@ describe("StakedLPTokenFactory", function () {
         const StakedLPToken = await ethers.getContractFactory("StakedLPToken");
         const token = StakedLPToken.attach(tokenAddress) as StakedLPToken;
 
-        expect(await token.name()).to.be.equal("Staked LP Token (SushiToken-Wrapped Ether)");
-        expect(await token.symbol()).to.be.equal("SLP:SUSHI-WETH");
+        expect(await token.factory()).to.be.equal(factory.address);
+        expect(await token.pid()).to.be.equal(0);
+        expect(await token.lpToken()).to.be.equal(lpToken);
     });
 });

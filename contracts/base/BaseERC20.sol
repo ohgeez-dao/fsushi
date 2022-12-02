@@ -9,6 +9,12 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 abstract contract BaseERC20 is Initializable, IERC20Metadata {
     error Expired();
     error InvalidSignature();
+    error InvalidAccount();
+    error InvalidSender();
+    error InvalidReceiver();
+    error InvalidOwner();
+    error InvalidSpender();
+    error NotEnoughBalance();
 
     uint8 public constant override decimals = 18;
     bytes32 private _CACHED_DOMAIN_SEPARATOR;
@@ -118,8 +124,16 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
         address to,
         uint256 amount
     ) internal virtual {
-        balanceOf[from] -= amount;
-        balanceOf[to] += amount;
+        if (from == address(0)) revert InvalidSender();
+        if (to == address(0)) revert InvalidReceiver();
+
+        uint256 balance = balanceOf[from];
+        if (balance < amount) revert NotEnoughBalance();
+        unchecked {
+            balanceOf[from] = balance - amount;
+            balanceOf[to] += amount;
+        }
+
         emit Transfer(from, to, amount);
     }
 
@@ -133,21 +147,31 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
         address spender,
         uint256 amount
     ) internal virtual {
+        if (owner == address(0)) revert InvalidOwner();
+        if (spender == address(0)) revert InvalidSpender();
+
         allowance[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
 
     function _mint(address account, uint256 amount) internal virtual {
+        if (account == address(0)) revert InvalidAccount();
+
         totalSupply += amount;
         unchecked {
             balanceOf[account] += amount;
         }
+
         emit Transfer(address(0), account, amount);
     }
 
     function _burn(address account, uint256 amount) internal virtual {
-        balanceOf[account] -= amount;
+        if (account == address(0)) revert InvalidAccount();
+
+        uint256 balance = balanceOf[account];
+        if (balance < amount) revert NotEnoughBalance();
         unchecked {
+            balanceOf[account] = balance - amount;
             totalSupply -= amount;
         }
 
