@@ -163,6 +163,8 @@ contract StakedLPToken is BaseERC20 {
     }
 
     function claimRewards(address beneficiary) external {
+        IMasterChef(masterChef).deposit(pid, 0);
+
         _claimRewards(beneficiary, msg.sender);
     }
 
