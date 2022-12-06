@@ -1,6 +1,12 @@
 import { ethers } from "hardhat";
 import { constants } from "ethers";
-import { MasterChef, UniswapV2Factory, UniswapV2Pair__factory, UniswapV2Router02 } from "../../typechain-types";
+import {
+    MasterChef,
+    SushiBar,
+    UniswapV2Factory,
+    UniswapV2Pair__factory,
+    UniswapV2Router02,
+} from "../../typechain-types";
 
 export const SUSHI_PER_BLOCK = 100;
 
@@ -27,6 +33,9 @@ const setupSushiswap = async tokens => {
         0
     )) as MasterChef;
     await tokens.sushi.transferOwnership(chef.address);
+
+    const Bar = await ethers.getContractFactory("SushiBar");
+    const bar = (await Bar.deploy(tokens.sushi.address)) as SushiBar;
 
     const addPool = async (tokenA, tokenB, allocPoint) => {
         const pid = await factory.allPairsLength();
@@ -60,6 +69,7 @@ const setupSushiswap = async tokens => {
         factory,
         router,
         chef,
+        bar,
         addPool,
         addLiquidity,
     };

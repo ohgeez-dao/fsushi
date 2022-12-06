@@ -10,12 +10,14 @@ contract StakedLPTokenFactory is IStakedLPTokenFactory {
     error TokenCreated();
 
     address public immutable override masterChef;
+    address public immutable override sushiBar;
     address internal immutable implementation;
 
     mapping(uint256 => address) public tokens;
 
-    constructor(address _masterChef) {
+    constructor(address _masterChef, address _sushiBar) {
         masterChef = _masterChef;
+        sushiBar = _sushiBar;
         StakedLPToken token = new StakedLPToken();
         implementation = address(token);
     }

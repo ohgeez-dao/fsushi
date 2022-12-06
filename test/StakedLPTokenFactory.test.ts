@@ -9,7 +9,7 @@ const setupTest = async () => {
     const sushi = await setupSushiswap(tokens);
 
     const Factory = await ethers.getContractFactory("StakedLPTokenFactory");
-    const factory = (await Factory.deploy(sushi.chef.address)) as StakedLPTokenFactory;
+    const factory = (await Factory.deploy(sushi.chef.address, sushi.bar.address)) as StakedLPTokenFactory;
 
     return {
         tokens,

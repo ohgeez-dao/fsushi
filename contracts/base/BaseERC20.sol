@@ -36,7 +36,7 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
     bytes32 private constant _PERMIT_TYPEHASH =
         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
-    function ERC20Permit_initialize(
+    function BaseERC20_initialize(
         string memory _name,
         string memory _symbol,
         string memory _version

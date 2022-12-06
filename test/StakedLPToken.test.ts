@@ -14,7 +14,7 @@ const setupTest = async () => {
     const [deployer, alice, bob, carol] = await ethers.getSigners();
 
     const Factory = await ethers.getContractFactory("StakedLPTokenFactory");
-    const factory = (await Factory.deploy(sushi.chef.address)) as StakedLPTokenFactory;
+    const factory = (await Factory.deploy(sushi.chef.address, sushi.bar.address)) as StakedLPTokenFactory;
 
     const createStakedLPToken = async pid => {
         await factory.createStakedLPToken(pid);
@@ -56,7 +56,7 @@ describe("StakedLPToken", function () {
         expect(await slpToken.balanceOf(alice.address)).to.be.equal(ONE);
 
         await mineBlocks(32);
-        expect(await slpToken.claimableRewardsOf(alice.address)).to.be.equal(ONE.mul(SUSHI_PER_BLOCK).mul(32));
+        expect(await slpToken.claimableSushiOf(alice.address)).to.be.equal(ONE.mul(SUSHI_PER_BLOCK).mul(32));
 
         await slpToken.connect(alice).unstake(ONE, alice.address);
         expect(await lpToken.balanceOf(alice.address)).to.be.equal(ONE);
@@ -162,14 +162,97 @@ describe("StakedLPToken", function () {
         await slpToken.connect(alice).stake(ONE, alice.address);
 
         await mineBlocks(32);
-        expect(await tokens.sushi.balanceOf(slpToken.address)).to.be.equal(0);
         expect(await tokens.sushi.balanceOf(alice.address)).to.be.equal(0);
-        expect(await slpToken.claimableRewardsOf(alice.address)).to.be.equal(ONE.mul(SUSHI_PER_BLOCK).mul(32));
+        expect(await slpToken.claimableSushiOf(alice.address)).to.be.equal(ONE.mul(3200));
 
-        await slpToken.connect(alice).claimRewards(alice.address);
-        expect(await lpToken.balanceOf(alice.address)).to.be.equal(0);
-        expect(await slpToken.balanceOf(alice.address)).to.be.equal(ONE);
-        expect(await tokens.sushi.balanceOf(slpToken.address)).to.be.equal(0);
-        expect(await tokens.sushi.balanceOf(alice.address)).to.be.equal(ONE.mul(SUSHI_PER_BLOCK).mul(33));
+        await slpToken.connect(alice).claimSushi(alice.address);
+        expect(await tokens.sushi.balanceOf(alice.address)).to.be.equal(ONE.mul(3300));
+    });
+
+    it("should claim rewards as SushiBar's balance increases for 1 account", async function () {
+        const { alice, tokens, sushi, createStakedLPToken } = await setupTest();
+
+        // 1 xSUSHI minted
+        await tokens.sushi.approve(sushi.bar.address, constants.MaxUint256);
+        await sushi.bar.enter(ONE);
+        expect(await sushi.bar.totalSupply()).to.be.equal(ONE);
+        expect(await tokens.sushi.balanceOf(sushi.bar.address)).to.be.equal(ONE);
+
+        // add SUSHI-WETH pool
+        const { pid, lpToken } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
+        const slpToken = await createStakedLPToken(pid);
+
+        await tokens.sushi.transfer(alice.address, ONE.add(1000));
+        await tokens.weth.connect(alice).deposit({ value: ONE.add(1000) });
+        await sushi.addLiquidity(alice, tokens.sushi, tokens.weth, ONE.add(1000), ONE.add(1000));
+
+        await lpToken.connect(alice).approve(slpToken.address, constants.MaxUint256);
+        await slpToken.connect(alice).stake(ONE, alice.address);
+
+        // send 1 SUSHI to SushiBar
+        await tokens.sushi.transfer(sushi.bar.address, ONE);
+        expect(await sushi.bar.totalSupply()).to.be.equal(ONE);
+        expect(await tokens.sushi.balanceOf(sushi.bar.address)).to.be.equal(ONE.mul(2));
+
+        // 3200 SUSHI will be staked into SushiBar (1 xSUSHI minted)
+        await mineBlocks(31);
+
+        expect(await slpToken.claimableSushiBarOf(alice.address)).to.be.equal(ONE.mul(1600));
+        expect(await slpToken.claimableSushiOf(alice.address)).to.be.equal(ONE.mul(3200));
+
+        await slpToken.connect(alice).claimSushi(alice.address);
+        expect(await tokens.sushi.balanceOf(alice.address)).to.be.equal(ONE.mul(3300));
+    });
+
+    it("should claim rewards as SushiBar's balance increases for multiple accounts", async function () {
+        const { alice, bob, tokens, sushi, createStakedLPToken } = await setupTest();
+
+        // 100 xSUSHI minted
+        await tokens.sushi.approve(sushi.bar.address, constants.MaxUint256);
+        await sushi.bar.enter(ONE.mul(100));
+        expect(await sushi.bar.totalSupply()).to.be.equal(ONE.mul(100));
+        expect(await tokens.sushi.balanceOf(sushi.bar.address)).to.be.equal(ONE.mul(100));
+
+        // add SUSHI-WETH pool
+        const { pid, lpToken } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
+        const slpToken = await createStakedLPToken(pid);
+
+        await tokens.sushi.transfer(alice.address, ONE.add(1000));
+        await tokens.weth.connect(alice).deposit({ value: ONE.add(1000) });
+        await sushi.addLiquidity(alice, tokens.sushi, tokens.weth, ONE.add(1000), ONE.add(1000));
+
+        await tokens.sushi.transfer(bob.address, ONE);
+        await tokens.weth.connect(bob).deposit({ value: ONE });
+        await sushi.addLiquidity(bob, tokens.sushi, tokens.weth, ONE, ONE);
+
+        await lpToken.connect(alice).approve(slpToken.address, constants.MaxUint256);
+        await lpToken.connect(bob).approve(slpToken.address, constants.MaxUint256);
+
+        await slpToken.connect(alice).stake(ONE, alice.address);
+
+        // 100 SUSHI staked into SushiBar
+        await mineBlocks(1);
+        await slpToken.connect(bob).stake(ONE, bob.address);
+
+        // send 200 SUSHI to SushiBar
+        await tokens.sushi.transfer(sushi.bar.address, ONE.mul(200));
+        expect(await sushi.bar.totalSupply()).to.be.equal(ONE.mul(300));
+        expect(await tokens.sushi.balanceOf(sushi.bar.address)).to.be.equal(ONE.mul(500));
+
+        // 500 SUSHI will be staked into SushiBar
+        await mineBlocks(5);
+
+        expect(await slpToken.claimableSushiBarOf(alice.address)).to.be.equal(ONE.mul(380));
+        expect(await slpToken.claimableSushiOf(alice.address)).to.be.equal(ONE.mul(1900).div(3));
+        expect(await slpToken.claimableSushiBarOf(bob.address)).to.be.equal(ONE.mul(180));
+        expect(await slpToken.claimableSushiOf(bob.address)).to.be.equal(ONE.mul(300));
+
+        await slpToken.connect(alice).claimSushi(alice.address);
+        expect(await tokens.sushi.balanceOf(alice.address)).to.be.equal(ONE.mul(2050).div(3));
+
+        await mineBlocks(3);
+        await slpToken.connect(bob).claimSushi(bob.address);
+        expect(await tokens.sushi.balanceOf(bob.address)).to.be.equal(ONE.mul(550).sub(1));
+        expect(await sushi.bar.totalSupply()).to.be.equal(ONE.mul(220));
     });
 });

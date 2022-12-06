@@ -7,6 +7,8 @@ interface IStakedLPTokenFactory {
 
     function masterChef() external view returns (address);
 
+    function sushiBar() external view returns (address);
+
     function predictStakedLPTokenAddress(uint256 pid) external view returns (address token);
 
     function createStakedLPToken(uint256 pid) external returns (address token);
