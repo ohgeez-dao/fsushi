@@ -3,33 +3,40 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IStakedLPTokenFactory.sol";
 import "./StakedLPToken.sol";
 
-contract StakedLPTokenFactory is IStakedLPTokenFactory {
+contract StakedLPTokenFactory is Ownable, IStakedLPTokenFactory {
+    error InvalidAddress();
     error TokenCreated();
 
     address public immutable override masterChef;
-    address public immutable override sushiBar;
-    address internal immutable implementation;
+    address internal immutable _implementation;
 
-    mapping(uint256 => address) public tokens;
+    address public override strategy;
+    mapping(uint256 => address) public override tokens;
 
-    constructor(address _masterChef, address _sushiBar) {
+    constructor(address _masterChef, address _strategy) {
         masterChef = _masterChef;
-        sushiBar = _sushiBar;
+        strategy = _strategy;
         StakedLPToken token = new StakedLPToken();
-        implementation = address(token);
+        _implementation = address(token);
     }
 
     function predictStakedLPTokenAddress(uint256 pid) external view override returns (address token) {
-        token = Clones.predictDeterministicAddress(implementation, bytes32(pid));
+        token = Clones.predictDeterministicAddress(_implementation, bytes32(pid));
+    }
+
+    function updateStrategy(address _strategy) external override onlyOwner {
+        if (_strategy == address(0)) revert InvalidAddress();
+        strategy = _strategy;
     }
 
     function createStakedLPToken(uint256 pid) external override returns (address token) {
         if (tokens[pid] != address(0)) revert TokenCreated();
 
-        token = Clones.cloneDeterministic(implementation, bytes32(pid));
+        token = Clones.cloneDeterministic(_implementation, bytes32(pid));
         StakedLPToken(token).initialize(pid);
 
         tokens[pid] = token;

@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { expect } from "chai";
-import { StakedLPTokenFactory, StakedLPToken } from "../typechain-types";
+import { StakedLPTokenFactory, StakedLPToken, SushiBarStrategy } from "../typechain-types";
 import setupTokens from "./utils/setupTokens";
 import setupSushiswap from "./utils/setupSushiswap";
 
@@ -8,8 +8,11 @@ const setupTest = async () => {
     const tokens = await setupTokens();
     const sushi = await setupSushiswap(tokens);
 
+    const Strategy = await ethers.getContractFactory("SushiBarStrategy");
+    const strategy = (await Strategy.deploy(tokens.sushi.address, sushi.bar.address)) as SushiBarStrategy;
+
     const Factory = await ethers.getContractFactory("StakedLPTokenFactory");
-    const factory = (await Factory.deploy(sushi.chef.address, sushi.bar.address)) as StakedLPTokenFactory;
+    const factory = (await Factory.deploy(sushi.chef.address, strategy.address)) as StakedLPTokenFactory;
 
     return {
         tokens,

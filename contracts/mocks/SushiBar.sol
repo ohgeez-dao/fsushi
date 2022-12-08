@@ -9,7 +9,7 @@ contract SushiBar is ERC20("SushiBar", "xSUSHI") {
     using SafeMath for uint256;
     IERC20 public sushi;
 
-    constructor(IERC20 _sushi) public {
+    constructor(IERC20 _sushi) {
         sushi = _sushi;
     }
 
