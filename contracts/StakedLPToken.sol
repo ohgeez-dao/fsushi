@@ -17,7 +17,7 @@ contract StakedLPToken is BaseERC20, IStakedLPToken {
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    error NoClaimableSushi();
+    error InsufficientSushi();
 
     uint128 internal constant POINTS_MULTIPLIER = type(uint128).max;
 
@@ -98,7 +98,7 @@ contract StakedLPToken is BaseERC20, IStakedLPToken {
             address strategy = IStakedLPTokenFactory(factory).strategy();
             if (totalSupply > 0) {
                 pointsPerShare +=
-                    (IStakedLPTokenStrategy(strategy).toShareTokens(pendingSushi) * POINTS_MULTIPLIER) /
+                    (IStakedLPTokenStrategy(strategy).toShares(pendingSushi) * POINTS_MULTIPLIER) /
                     totalSupply;
             }
         }
@@ -147,39 +147,58 @@ contract StakedLPToken is BaseERC20, IStakedLPToken {
         emit Stake(amount, beneficiary, from);
     }
 
-    function unstake(uint256 amount, address beneficiary) external override {
+    function unstake(
+        uint256 amount,
+        uint256 amountSushiDesired,
+        address beneficiary
+    ) external override {
         IMasterChef(masterChef).withdraw(pid, amount);
         IERC20(lpToken).safeTransfer(beneficiary, amount);
 
-        _claimSushi(beneficiary);
+        _claimSushi(amountSushiDesired, beneficiary);
 
         _burn(msg.sender, amount);
 
         emit Unstake(amount, beneficiary, msg.sender);
     }
 
-    function claimSushi(address beneficiary) external override {
-        IMasterChef(masterChef).deposit(pid, 0);
-
-        if (_claimSushi(beneficiary) == 0) revert NoClaimableSushi();
+    function claimSushi(address beneficiary) external override returns (uint256 amountClaimed) {
+        return claimSushi(type(uint256).max, beneficiary);
     }
 
-    function _claimSushi(address beneficiary) internal returns (uint256 amount) {
+    function claimSushi(uint256 amountSushiDesired, address beneficiary)
+        public
+        override
+        returns (uint256 amountClaimed)
+    {
+        IMasterChef(masterChef).deposit(pid, 0);
+
+        return _claimSushi(amountSushiDesired, beneficiary);
+    }
+
+    function _claimSushi(uint256 amountSushiDesired, address beneficiary) internal returns (uint256 amountClaimed) {
         uint256 balanceSushi = IERC20(sushi).balanceOf(address(this));
         if (balanceSushi > 0) {
             _depositSushi(balanceSushi);
         }
 
-        uint256 amountShares = _claimableSharesOf(msg.sender, false);
-        if (amountShares > 0) {
-            _claimedSharesOf[msg.sender] += amountShares;
-
+        if (amountSushiDesired > 0) {
             address strategy = IStakedLPTokenFactory(factory).strategy();
-            amount = IStakedLPTokenStrategy(strategy).withdraw(amountShares, address(this));
+            uint256 claimableShares = _claimableSharesOf(msg.sender, false);
+            uint256 claimableSushi = IStakedLPTokenStrategy(strategy).toAssets(claimableShares);
+            if (claimableSushi == 0) revert InsufficientSushi();
 
-            IERC20(sushi).safeTransfer(beneficiary, amount);
+            uint256 shares = amountSushiDesired == type(uint256).max
+                ? claimableShares
+                : (amountSushiDesired * claimableShares) / claimableSushi;
+            if (shares > claimableShares) revert InsufficientSushi();
 
-            emit ClaimSushi(amount, beneficiary);
+            _claimedSharesOf[msg.sender] += shares;
+
+            amountClaimed = IStakedLPTokenStrategy(strategy).withdraw(shares, address(this));
+            IERC20(sushi).safeTransfer(beneficiary, amountClaimed);
+
+            emit ClaimSushi(amountClaimed, beneficiary);
         }
     }
 

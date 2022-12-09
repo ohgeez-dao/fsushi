@@ -43,7 +43,13 @@ interface IStakedLPToken is IERC20 {
         bytes32 s
     ) external;
 
-    function unstake(uint256 amount, address beneficiary) external;
+    function unstake(
+        uint256 amount,
+        uint256 amountSushiDesired,
+        address beneficiary
+    ) external;
 
-    function claimSushi(address beneficiary) external;
+    function claimSushi(address beneficiary) external returns (uint256 amountSushiClaimed);
+
+    function claimSushi(uint256 amountSushiDesired, address beneficiary) external returns (uint256 amountSushiClaimed);
 }

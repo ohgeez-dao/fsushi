@@ -190,14 +190,19 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
         uint256 _minimumReturned,
         address _yieldTo
     ) external override nonReentrant returns (uint256) {
-        uint256 amountYield = quoteBurnFToken(_amount);
-        if (amountYield == 0 || amountYield < _minimumReturned) revert InsufficientAmount();
+        uint256 amountSushiDesired = quoteBurnFToken(_amount);
+        if (amountSushiDesired == 0 || amountSushiDesired < _minimumReturned) revert InsufficientAmount();
 
         IFlashFToken(fToken).burnFrom(msg.sender, _amount);
-        IStakedLPToken(_slpToken).unstake(_amount, _yieldTo); // TODO: claim only certain amount of sushi
+        IStakedLPToken(_slpToken).unstake(_amount, amountSushiDesired, address(this));
 
-        emit BurnedFToken(msg.sender, _amount, amountYield);
+        uint256 balanceSushi = IERC20(_sushi).balanceOf(address(this));
+        uint256 feeSushi = (balanceSushi * feeBPS) / 10000;
+        IERC20(_sushi).safeTransfer(_yieldTo, balanceSushi - feeSushi);
+        IERC20(_sushi).safeTransfer(vault, feeSushi);
 
-        return amountYield;
+        emit BurnedFToken(msg.sender, _amount, balanceSushi);
+
+        return balanceSushi;
     }
 }

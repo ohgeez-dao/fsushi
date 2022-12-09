@@ -17,11 +17,11 @@ interface IStakedLPTokenStrategy {
 
     function claimableRewardsOf(address account) external view returns (uint256);
 
-    function toAssets(uint256 amountShareToken) external view returns (uint256);
+    function toAssets(uint256 amountShares) external view returns (uint256);
 
-    function toShareTokens(uint256 amountAsset) external view returns (uint256);
+    function toShares(uint256 amountAssets) external view returns (uint256);
 
-    function deposit(uint256 amountAsset, address beneficiary) external returns (uint256 amountShareToken);
+    function deposit(uint256 amountAssets, address beneficiary) external returns (uint256 amountShares);
 
-    function withdraw(uint256 amountShareToken, address beneficiary) external returns (uint256 claimedAmountRewards);
+    function withdraw(uint256 amountShares, address beneficiary) external returns (uint256 claimedAmountRewards);
 }

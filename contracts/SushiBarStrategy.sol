@@ -51,7 +51,7 @@ contract SushiBarStrategy is IStakedLPTokenStrategy {
         return (IERC20(_sushi).balanceOf(address(_sushiBar)) * amountSushiBar) / totalSushiBar;
     }
 
-    function toShareTokens(uint256 amountSushi) external view override returns (uint256) {
+    function toShares(uint256 amountSushi) external view override returns (uint256) {
         uint256 totalSushiBar = ISushiBar(_sushiBar).totalSupply();
         uint256 balance = IERC20(_sushi).balanceOf(_sushiBar);
         if (totalSushiBar == 0 || balance == 0) return amountSushi;
