@@ -5,8 +5,6 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Router01.sol";
-import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "./interfaces/IFlashStrategy.sol";
 import "./interfaces/IFlashFToken.sol";
 import "./interfaces/IStakedLPTokenFactory.sol";
@@ -19,7 +17,7 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
     error Forbidden();
     error InvalidFlashProtocol();
     error InvalidVault();
-    error InvalidRouter();
+    error AmountTooLow();
     error InsufficientAmount();
     error InsufficientTotalSupply();
 
@@ -35,18 +33,6 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
      * @notice fee recipient
      */
     address public immutable feeRecipient;
-    /**
-     * @notice address of UniswapV2Router
-     */
-    address public immutable router;
-    /**
-     * @notice address of Wrapped ETH
-     */
-    address public immutable weth;
-    /**
-     * @notice address of StakedLPTokenFactory
-     */
-    address public immutable factory;
 
     /**
      * @notice address of SUSHI token
@@ -71,24 +57,18 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
         address _flashProtocol,
         uint256 _feeBPS,
         address _feeRecipient,
-        address _router,
         address _factory,
         uint256 _pid
     ) {
         if (_flashProtocol == address(0)) revert InvalidFlashProtocol();
         if (_feeRecipient == address(0)) revert InvalidVault();
-        if (_router == address(0)) revert InvalidRouter();
 
-        address _weth = IUniswapV2Router01(_router).WETH();
         address slpToken = IStakedLPTokenFactory(_factory).tokens(_pid);
         if (slpToken == address(0)) slpToken = IStakedLPTokenFactory(_factory).createStakedLPToken(_pid);
 
         flashProtocol = _flashProtocol;
         feeBPS = _feeBPS;
         feeRecipient = _feeRecipient;
-        router = _router;
-        weth = _weth;
-        factory = _factory;
         _sushi = IStakedLPToken(slpToken).sushi();
         _lpToken = IStakedLPToken(slpToken).lpToken();
         _slpToken = slpToken;
@@ -112,7 +92,7 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
      * @return amount of yield tokens that can be rewarded in SUSHI
      */
     function getYieldBalance() public view override returns (uint256) {
-        return IStakedLPToken(_slpToken).claimableTotalSushi();
+        return IStakedLPToken(_slpToken).claimableSushiOf(address(this));
     }
 
     /**
@@ -127,11 +107,10 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
      * @return amountFToken how many fTokens should be minted for a given _amount and _duration (in seconds)
      */
     function quoteMintFToken(uint256 _amount, uint256 _duration) external pure override returns (uint256 amountFToken) {
-        // 1 ERC20 for 365 DAYS = 1 fERC20
-        // 1 second = 0.000000031709792000
-        uint256 amountToMint = (_amount * (_duration * 31709792000)) / (10**18);
+        // 1 fToken per 1 year
+        uint256 amountToMint = (_amount * _duration) / 365 days;
 
-        if (amountToMint == 0) revert InsufficientAmount();
+        if (amountToMint == 0) revert AmountTooLow();
 
         return amountToMint;
     }
@@ -145,10 +124,10 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
 
         if (_amount > totalSupply) _amount = totalSupply;
 
-        return (IStakedLPToken(_slpToken).claimableTotalSushi() * _amount) / totalSupply;
+        return (getYieldBalance() * _amount) / totalSupply;
     }
 
-    function getMaxStakeDuration() external pure override returns (uint256) {
+    function getMaxStakeDuration() public pure override returns (uint256) {
         return 4 * 365 days;
     }
 
