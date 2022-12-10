@@ -11,6 +11,7 @@ import "./interfaces/IFlashStrategy.sol";
 import "./interfaces/IFlashFToken.sol";
 import "./interfaces/IStakedLPTokenFactory.sol";
 import "./interfaces/IStakedLPToken.sol";
+import "./interfaces/IFeeVault.sol";
 
 contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -31,9 +32,9 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
      */
     uint256 public immutable feeBPS;
     /**
-     * @notice fee vault
+     * @notice fee recipient
      */
-    address public immutable vault;
+    address public immutable feeRecipient;
     /**
      * @notice address of UniswapV2Router
      */
@@ -69,13 +70,13 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
     constructor(
         address _flashProtocol,
         uint256 _feeBPS,
-        address _vault,
+        address _feeRecipient,
         address _router,
         address _factory,
         uint256 _pid
     ) {
         if (_flashProtocol == address(0)) revert InvalidFlashProtocol();
-        if (_vault == address(0)) revert InvalidVault();
+        if (_feeRecipient == address(0)) revert InvalidVault();
         if (_router == address(0)) revert InvalidRouter();
 
         address _weth = IUniswapV2Router01(_router).WETH();
@@ -84,7 +85,7 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
 
         flashProtocol = _flashProtocol;
         feeBPS = _feeBPS;
-        vault = _vault;
+        feeRecipient = _feeRecipient;
         router = _router;
         weth = _weth;
         factory = _factory;
@@ -199,7 +200,10 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
         uint256 balanceSushi = IERC20(_sushi).balanceOf(address(this));
         uint256 feeSushi = (balanceSushi * feeBPS) / 10000;
         IERC20(_sushi).safeTransfer(_yieldTo, balanceSushi - feeSushi);
-        IERC20(_sushi).safeTransfer(vault, feeSushi);
+        IERC20(_sushi).safeTransfer(feeRecipient, feeSushi);
+        if (feeRecipient.code.length > 0) {
+            try IFeeVault(feeRecipient).checkpoint(_sushi) {} catch {}
+        }
 
         emit BurnedFToken(msg.sender, _amount, balanceSushi);
 
