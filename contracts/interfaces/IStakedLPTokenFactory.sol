@@ -6,6 +6,8 @@ interface IStakedLPTokenFactory {
     event UpdateStrategy(address indexed strategy);
     event CreateStakedLPToken(uint256 indexed pid, address indexed token);
 
+    function router() external view returns (address);
+
     function masterChef() external view returns (address);
 
     function strategy() external view returns (address);

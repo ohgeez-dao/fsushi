@@ -18,7 +18,7 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
     error InvalidFlashProtocol();
     error InvalidVault();
     error AmountTooLow();
-    error InsufficientAmount();
+    error InsufficientYield();
     error InsufficientTotalSupply();
 
     /**
@@ -42,10 +42,6 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
      * @notice address of StakedLPToken
      */
     address internal immutable _slpToken;
-    /**
-     * @notice address of UniswapV2Pair
-     */
-    address internal immutable _lpToken;
     uint256 internal _balancePrincipal;
 
     /**
@@ -70,7 +66,6 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
         feeBPS = _feeBPS;
         feeRecipient = _feeRecipient;
         _sushi = IStakedLPToken(slpToken).sushi();
-        _lpToken = IStakedLPToken(slpToken).lpToken();
         _slpToken = slpToken;
 
         approveMax();
@@ -116,13 +111,15 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
     }
 
     /**
-     * @return amountSushi how many SUSHI rewards should be returned if _amount fERC20 tokens are burned
+     * @return how many SLP rewards should be returned if _amount fERC20 tokens are burned
      */
-    function quoteBurnFToken(uint256 _amount) public view override returns (uint256 amountSushi) {
+    function quoteBurnFToken(uint256 _amount) public view override returns (uint256) {
         uint256 totalSupply = IERC20(fToken).totalSupply();
         if (totalSupply == 0) revert InsufficientTotalSupply();
 
-        if (_amount > totalSupply) _amount = totalSupply;
+        if (_amount > totalSupply) {
+            _amount = totalSupply;
+        }
 
         return (getYieldBalance() * _amount) / totalSupply;
     }
@@ -131,9 +128,7 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
         return 4 * 365 days;
     }
 
-    function approveMax() public {
-        IERC20(_lpToken).approve(_slpToken, type(uint256).max);
-    }
+    function approveMax() public {}
 
     /**
      * @dev called by flashProtocol
@@ -157,6 +152,8 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
      * @notice This function should withdraw principal from the underlying strategy.
      */
     function withdrawPrincipal(uint256 _amount) external override onlyAuthorised {
+        IStakedLPToken(_slpToken).checkpoint();
+
         IERC20(_slpToken).safeTransfer(msg.sender, _amount);
         _balancePrincipal -= _amount;
     }
@@ -170,22 +167,35 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
         uint256 _minimumReturned,
         address _yieldTo
     ) external override nonReentrant returns (uint256) {
-        uint256 amountSushiDesired = quoteBurnFToken(_amount);
-        if (amountSushiDesired == 0 || amountSushiDesired < _minimumReturned) revert InsufficientAmount();
+        uint256 yield = quoteBurnFToken(_amount);
+        if (yield == 0 || yield < _minimumReturned) revert InsufficientYield();
 
         IFlashFToken(fToken).burnFrom(msg.sender, _amount);
-        IStakedLPToken(_slpToken).unstake(_amount, amountSushiDesired, address(this));
+
+        IStakedLPToken(_slpToken).unstake(yield, address(this));
+
+        address lpToken = IStakedLPToken(_slpToken).lpToken();
+        uint256 balanceLPToken = IERC20(lpToken).balanceOf(address(this));
+        _transfer(lpToken, _yieldTo, balanceLPToken);
 
         uint256 balanceSushi = IERC20(_sushi).balanceOf(address(this));
-        uint256 feeSushi = (balanceSushi * feeBPS) / 10000;
-        IERC20(_sushi).safeTransfer(_yieldTo, balanceSushi - feeSushi);
-        IERC20(_sushi).safeTransfer(feeRecipient, feeSushi);
+        _transfer(_sushi, _yieldTo, balanceSushi);
+
+        emit BurnedFToken(msg.sender, _amount, yield);
+
+        return yield;
+    }
+
+    function _transfer(
+        address token,
+        address to,
+        uint256 amount
+    ) internal {
+        uint256 fee = (amount * feeBPS) / 10000;
+        IERC20(token).safeTransfer(to, amount - fee);
+        IERC20(token).safeTransfer(feeRecipient, fee);
         if (feeRecipient.code.length > 0) {
-            try IFeeVault(feeRecipient).checkpoint(_sushi) {} catch {}
+            try IFeeVault(feeRecipient).checkpoint(token) {} catch {}
         }
-
-        emit BurnedFToken(msg.sender, _amount, balanceSushi);
-
-        return balanceSushi;
     }
 }

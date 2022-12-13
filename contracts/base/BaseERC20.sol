@@ -28,9 +28,9 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
     string public override name;
     string public override symbol;
 
-    uint256 public override totalSupply;
-    mapping(address => uint256) public override balanceOf;
-    mapping(address => mapping(address => uint256)) public override allowance;
+    uint256 internal _totalSupply;
+    mapping(address => uint256) internal _balanceOf;
+    mapping(address => mapping(address => uint256)) internal _allowance;
     mapping(address => uint256) public nonces;
 
     bytes32 private constant _PERMIT_TYPEHASH =
@@ -59,6 +59,18 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
 
     function DOMAIN_SEPARATOR() external view returns (bytes32) {
         return _domainSeparatorV4();
+    }
+
+    function totalSupply() external view virtual returns (uint256) {
+        return _totalSupply;
+    }
+
+    function balanceOf(address account) external view virtual returns (uint256) {
+        return _balanceOf[account];
+    }
+
+    function allowance(address owner, address spender) external view virtual returns (uint256) {
+        return _allowance[owner][spender];
     }
 
     function _domainSeparatorV4() internal view returns (bytes32) {
@@ -107,8 +119,8 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
         address to,
         uint256 amount
     ) external returns (bool) {
-        if (allowance[from][msg.sender] != type(uint256).max) {
-            allowance[from][msg.sender] -= amount;
+        if (_allowance[from][msg.sender] != type(uint256).max) {
+            _allowance[from][msg.sender] -= amount;
         }
         _transfer(from, to, amount);
         return true;
@@ -127,11 +139,11 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
         if (from == address(0)) revert InvalidSender();
         if (to == address(0)) revert InvalidReceiver();
 
-        uint256 balance = balanceOf[from];
+        uint256 balance = _balanceOf[from];
         if (balance < amount) revert NotEnoughBalance();
         unchecked {
-            balanceOf[from] = balance - amount;
-            balanceOf[to] += amount;
+            _balanceOf[from] = balance - amount;
+            _balanceOf[to] += amount;
         }
 
         emit Transfer(from, to, amount);
@@ -150,16 +162,16 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
         if (owner == address(0)) revert InvalidOwner();
         if (spender == address(0)) revert InvalidSpender();
 
-        allowance[owner][spender] = amount;
+        _allowance[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
 
     function _mint(address account, uint256 amount) internal virtual {
         if (account == address(0)) revert InvalidAccount();
 
-        totalSupply += amount;
+        _totalSupply += amount;
         unchecked {
-            balanceOf[account] += amount;
+            _balanceOf[account] += amount;
         }
 
         emit Transfer(address(0), account, amount);
@@ -168,11 +180,11 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
     function _burn(address account, uint256 amount) internal virtual {
         if (account == address(0)) revert InvalidAccount();
 
-        uint256 balance = balanceOf[account];
+        uint256 balance = _balanceOf[account];
         if (balance < amount) revert NotEnoughBalance();
         unchecked {
-            balanceOf[account] = balance - amount;
-            totalSupply -= amount;
+            _balanceOf[account] = balance - amount;
+            _totalSupply -= amount;
         }
 
         emit Transfer(account, address(0), amount);

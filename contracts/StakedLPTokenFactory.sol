@@ -11,13 +11,19 @@ contract StakedLPTokenFactory is Ownable, IStakedLPTokenFactory {
     error InvalidAddress();
     error TokenCreated();
 
+    address public immutable override router;
     address public immutable override masterChef;
     address internal immutable _implementation;
 
     address public override strategy;
     mapping(uint256 => address) public override tokens;
 
-    constructor(address _masterChef, address _strategy) {
+    constructor(
+        address _router,
+        address _masterChef,
+        address _strategy
+    ) {
+        router = _router;
         masterChef = _masterChef;
         strategy = _strategy;
         StakedLPToken token = new StakedLPToken();
@@ -37,7 +43,7 @@ contract StakedLPTokenFactory is Ownable, IStakedLPTokenFactory {
         if (tokens[pid] != address(0)) revert TokenCreated();
 
         token = Clones.cloneDeterministic(_implementation, bytes32(pid));
-        StakedLPToken(token).initialize(pid);
+        StakedLPToken(token).initialize(router, masterChef, pid);
 
         tokens[pid] = token;
 

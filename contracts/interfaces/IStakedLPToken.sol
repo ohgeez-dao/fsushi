@@ -5,13 +5,19 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IStakedLPToken is IERC20 {
-    event Stake(uint256 amount, address indexed beneficiary, address indexed from);
-    event Unstake(uint256 amount, address indexed beneficiary, address indexed from);
+    event Stake(uint256 amount, uint256 amountLP, address indexed beneficiary);
+    event Unstake(uint256 amount, uint256 amountLP, address indexed beneficiary);
     event ClaimSushi(uint256 amount, address indexed beneficiary);
 
-    function initialize(uint256 _pid) external;
+    function initialize(
+        address _router,
+        address _masterChef,
+        uint256 _pid
+    ) external;
 
     function factory() external view returns (address);
+
+    function router() external view returns (address);
 
     function masterChef() external view returns (address);
 
@@ -25,31 +31,26 @@ interface IStakedLPToken is IERC20 {
 
     function token1() external view returns (address);
 
+    function stakedTotalSushi() external view returns (uint256);
+
+    function stakedSushiOf(address account) external view returns (uint256);
+
     function claimableTotalSushi() external view returns (uint256);
 
     function claimableSushiOf(address account) external view returns (uint256);
 
     function approveMax() external;
 
-    function stake(uint256 amount, address beneficiary) external;
-
-    function stakeSigned(
+    function stake(
         uint256 amount,
-        address beneficiary,
-        address from,
+        address[] calldata path0,
+        address[] calldata path1,
         uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
-
-    function unstake(
-        uint256 amount,
-        uint256 amountSushiDesired,
+        uint256 amountLPMin,
         address beneficiary
     ) external;
 
-    function claimSushi(address beneficiary) external returns (uint256 amountSushiClaimed);
+    function unstake(uint256 amount, address beneficiary) external;
 
-    function claimSushi(uint256 amountSushiDesired, address beneficiary) external returns (uint256 amountSushiClaimed);
+    function checkpoint() external;
 }
