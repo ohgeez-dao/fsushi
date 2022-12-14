@@ -23,7 +23,6 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     error InvalidPath();
     error InsufficientSushi();
     error InsufficientAmount();
-    error InsufficientAmountLP();
 
     uint128 internal constant POINTS_MULTIPLIER = type(uint128).max;
 
@@ -159,23 +158,84 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     }
 
     /**
+     * @dev amount of sushi that LPs converted to is added to stakedSushiOf(account) and SLP is minted
+     *  user signature is needed for IUniswapV2Pair.permit()
+     */
+    function stakeSigned(
+        uint256 amountLP,
+        address[] calldata path0,
+        address[] calldata path1,
+        uint256 amountMin,
+        address beneficiary,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override nonReentrant {
+        IUniswapV2Pair(lpToken).permit(msg.sender, address(this), amountLP, deadline, v, r, s);
+        _stake(amountLP, path0, path1, amountMin, beneficiary);
+    }
+
+    /**
+     * @dev amount of sushi that LPs converted to is added to stakedSushiOf(account) and SLP is minted
+     */
+    function stake(
+        uint256 amountLP,
+        address[] calldata path0,
+        address[] calldata path1,
+        uint256 amountMin,
+        address beneficiary,
+        uint256 deadline
+    ) external override nonReentrant {
+        if (block.timestamp > deadline) revert Expired();
+        _stake(amountLP, path0, path1, amountMin, beneficiary);
+    }
+
+    function _stake(
+        uint256 amountLP,
+        address[] calldata path0,
+        address[] calldata path1,
+        uint256 amountMin,
+        address beneficiary
+    ) internal {
+        if (path0[0] != token0 || path0[path0.length - 1] != sushi) revert InvalidPath();
+        if (path1[0] != token1 || path1[path1.length - 1] != sushi) revert InvalidPath();
+
+        IERC20(lpToken).safeTransferFrom(msg.sender, address(this), amountLP);
+
+        uint256 total = IUniswapV2Pair(lpToken).totalSupply();
+        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(lpToken).getReserves();
+        uint256 amount = UniswapV2Utils.quote(router, (reserve0 * amountLP) / total, path0) +
+            UniswapV2Utils.quote(router, (reserve1 * amountLP) / total, path1);
+
+        if (amount < amountMin) revert InsufficientAmount();
+
+        IMasterChef(masterChef).deposit(pid, amountLP);
+        _depositSushi();
+
+        _mint(beneficiary, amount);
+
+        emit Stake(amount, amountLP, beneficiary);
+    }
+
+    /**
      * @dev amount is added to stakedSushiOf(account) and same amount of SLP is minted
      *  provided SUSHI is swapped then added as liquidity which results in LP tokens staked
      */
-    function stake(
+    function stakeWithSushi(
         uint256 amount,
         address[] calldata path0,
         address[] calldata path1,
-        uint256 deadline,
         uint256 amountLPMin,
-        address beneficiary
+        address beneficiary,
+        uint256 deadline
     ) external override nonReentrant {
         if (path0[0] != sushi || path0[path0.length - 1] != token0) revert InvalidPath();
         if (path1[0] != sushi || path1[path1.length - 1] != token1) revert InvalidPath();
 
         IERC20(sushi).safeTransferFrom(msg.sender, address(this), amount);
         uint256 amountLP = UniswapV2Utils.addLiquidityWithSingleToken(router, amount, path0, path1, deadline);
-        if (amountLP < amountLPMin) revert InsufficientAmountLP();
+        if (amountLP < amountLPMin) revert InsufficientAmount();
 
         IMasterChef(masterChef).deposit(pid, amountLP);
         _depositSushi();

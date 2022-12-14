@@ -41,13 +41,34 @@ interface IStakedLPToken is IERC20 {
 
     function approveMax() external;
 
+    function stakeSigned(
+        uint256 amountLP,
+        address[] calldata path0,
+        address[] calldata path1,
+        uint256 amountMin,
+        address beneficiary,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
     function stake(
+        uint256 amountLP,
+        address[] calldata path0,
+        address[] calldata path1,
+        uint256 amountMin,
+        address beneficiary,
+        uint256 deadline
+    ) external;
+
+    function stakeWithSushi(
         uint256 amount,
         address[] calldata path0,
         address[] calldata path1,
-        uint256 deadline,
         uint256 amountLPMin,
-        address beneficiary
+        address beneficiary,
+        uint256 deadline
     ) external;
 
     function unstake(uint256 amount, address beneficiary) external;
