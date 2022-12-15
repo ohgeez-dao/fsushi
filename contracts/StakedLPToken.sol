@@ -81,7 +81,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     /**
      * @return Sum of (shares in SUSHI by staked account) + (SUSHI claimable by account)
      */
-    function balanceOf(address account) external view override(BaseERC20, IERC20) returns (uint256) {
+    function balanceOf(address account) public view override(BaseERC20, IERC20) returns (uint256) {
         return sharesOf(account) + claimableYieldOf(account);
     }
 
@@ -250,42 +250,36 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     /**
      * @dev when unstaking, the user's share of LP tokens are returned and pro-rata SUSHI yield is return as well
      */
-    function unstake(uint256 amount, address beneficiary) external override nonReentrant {
-        uint256 amountLP = (amount * _balanceLP) / totalSupply();
+    function unstake(uint256 shares, address beneficiary) external override nonReentrant {
+        uint256 amountLP = (shares * _balanceLP) / totalShares();
         IMasterChef(masterChef).withdraw(pid, amountLP);
-        _claimSushi(amount, beneficiary);
+
+        _claimSushi(shares, beneficiary);
 
         IERC20(lpToken).safeTransfer(beneficiary, amountLP);
 
-        _burn(msg.sender, amount);
+        _burn(msg.sender, shares);
         _balanceLP -= amountLP;
 
-        emit Unstake(amount, amountLP, beneficiary);
+        emit Unstake(shares, amountLP, beneficiary);
     }
 
-    function _claimSushi(uint256 amount, address beneficiary) internal returns (uint256 amountClaimed) {
+    function _claimSushi(uint256 shares, address beneficiary) internal {
         _depositSushi();
 
-        uint256 value = (amount * totalShares()) / totalSupply();
-        uint256 valueMax = sharesOf(msg.sender);
-        if (value > valueMax) revert InsufficientAmount();
+        uint256 sharesMax = sharesOf(msg.sender);
+        if (shares > sharesMax) revert InsufficientAmount();
 
         address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
         uint256 claimableShares = _claimableYieldSharesOf(msg.sender, false);
-        uint256 claimableYield = IERC4626(yieldVault).convertToAssets(claimableShares);
-        if (claimableYield == 0) revert InsufficientYield();
+        if (claimableShares == 0) revert InsufficientYield();
 
-        uint256 shares = (claimableShares * value) / valueMax;
-        _claimedYieldSharesOf[msg.sender] += shares;
+        uint256 yieldShares = (claimableShares * shares) / sharesMax;
+        _claimedYieldSharesOf[msg.sender] += yieldShares;
 
-        amountClaimed = IERC4626(yieldVault).withdraw(
-            (claimableYield * value) / valueMax,
-            address(this),
-            address(this)
-        );
-        IERC20(sushi).safeTransfer(beneficiary, amountClaimed);
+        uint256 yield = IERC4626(yieldVault).redeem(yieldShares, beneficiary, address(this));
 
-        emit ClaimSushi(amountClaimed, beneficiary);
+        emit ClaimSushi(shares, yield, beneficiary);
     }
 
     /**
@@ -314,29 +308,29 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         address to,
         uint256 amount
     ) internal override {
-        uint256 value = _toValue(amount);
-        super._transfer(from, to, value);
-        int256 _magCorrection = (_pointsPerShare * value).toInt256();
+        uint256 balance = balanceOf(from);
+        uint256 shares = balance == 0 ? 0 : (amount * sharesOf(from)) / balance;
+
+        super._transfer(from, to, shares);
+
+        int256 _magCorrection = (_pointsPerShare * shares).toInt256();
         _pointsCorrection[from] += _magCorrection;
         _pointsCorrection[to] += _magCorrection;
     }
 
-    function _mint(address account, uint256 amount) internal override {
-        super._mint(account, amount);
-        _correctPoints(account, -int256(amount));
+    function _mint(address account, uint256 shares) internal override {
+        super._mint(account, shares);
+
+        _correctPoints(account, -int256(shares));
     }
 
-    function _burn(address account, uint256 amount) internal override {
-        uint256 value = _toValue(amount);
-        super._burn(account, value);
-        _correctPoints(account, int256(value));
+    function _burn(address account, uint256 shares) internal override {
+        super._burn(account, shares);
+
+        _correctPoints(account, int256(shares));
     }
 
     function _correctPoints(address account, int256 amount) internal {
         _pointsCorrection[account] += amount * int256(_pointsPerShare);
-    }
-
-    function _toValue(uint256 balance) internal view returns (uint256) {
-        return (balance * totalShares()) / totalSupply();
     }
 }

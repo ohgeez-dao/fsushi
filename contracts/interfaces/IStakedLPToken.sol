@@ -5,9 +5,9 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IStakedLPToken is IERC20 {
-    event Stake(uint256 amount, uint256 amountLP, address indexed beneficiary);
-    event Unstake(uint256 amount, uint256 amountLP, address indexed beneficiary);
-    event ClaimSushi(uint256 amount, address indexed beneficiary);
+    event Stake(uint256 shares, uint256 amountLP, address indexed beneficiary);
+    event Unstake(uint256 shares, uint256 amountLP, address indexed beneficiary);
+    event ClaimSushi(uint256 shares, uint256 yield, address indexed beneficiary);
 
     function initialize(
         address _router,
@@ -71,7 +71,7 @@ interface IStakedLPToken is IERC20 {
         uint256 deadline
     ) external;
 
-    function unstake(uint256 amount, address beneficiary) external;
+    function unstake(uint256 shares, address beneficiary) external;
 
     function checkpoint() external;
 }
