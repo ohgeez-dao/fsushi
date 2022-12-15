@@ -87,7 +87,7 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
      * @return amount of yield tokens that can be rewarded in SUSHI
      */
     function getYieldBalance() public view override returns (uint256) {
-        return IStakedLPToken(_slpToken).claimableSushiOf(address(this));
+        return IStakedLPToken(_slpToken).claimableYieldOf(address(this));
     }
 
     /**

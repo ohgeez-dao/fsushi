@@ -31,13 +31,13 @@ interface IStakedLPToken is IERC20 {
 
     function token1() external view returns (address);
 
-    function stakedTotalSushi() external view returns (uint256);
+    function totalShares() external view returns (uint256);
 
-    function stakedSushiOf(address account) external view returns (uint256);
+    function sharesOf(address account) external view returns (uint256);
 
-    function claimableTotalSushi() external view returns (uint256);
+    function claimableTotalYield() external view returns (uint256);
 
-    function claimableSushiOf(address account) external view returns (uint256);
+    function claimableYieldOf(address account) external view returns (uint256);
 
     function approveMax() external;
 

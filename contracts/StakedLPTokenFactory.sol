@@ -15,17 +15,17 @@ contract StakedLPTokenFactory is Ownable, IStakedLPTokenFactory {
     address public immutable override masterChef;
     address internal immutable _implementation;
 
-    address public override strategy;
+    address public override yieldVault;
     mapping(uint256 => address) public override tokens;
 
     constructor(
         address _router,
         address _masterChef,
-        address _strategy
+        address _yieldVault
     ) {
         router = _router;
         masterChef = _masterChef;
-        strategy = _strategy;
+        yieldVault = _yieldVault;
         StakedLPToken token = new StakedLPToken();
         _implementation = address(token);
     }
@@ -34,9 +34,11 @@ contract StakedLPTokenFactory is Ownable, IStakedLPTokenFactory {
         token = Clones.predictDeterministicAddress(_implementation, bytes32(pid));
     }
 
-    function updateStrategy(address _strategy) external override onlyOwner {
-        if (_strategy == address(0)) revert InvalidAddress();
-        strategy = _strategy;
+    function updateYieldVault(address vault) external override onlyOwner {
+        if (vault == address(0)) revert InvalidAddress();
+        yieldVault = vault;
+
+        emit UpdateVault(vault);
     }
 
     function createStakedLPToken(uint256 pid) external override returns (address token) {
