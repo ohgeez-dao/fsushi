@@ -16,6 +16,8 @@ library UniswapV2Utils {
         uint256 amountIn,
         address[] memory path
     ) internal view returns (uint256 amountOut) {
+        if (path.length < 2) return amountIn;
+
         uint256[] memory amountsOut = IUniswapV2Router02(router).getAmountsOut(amountIn, path);
         return amountsOut[amountsOut.length - 1];
     }

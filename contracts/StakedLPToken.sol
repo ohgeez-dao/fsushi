@@ -215,6 +215,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         _depositSushi();
 
         _mint(beneficiary, amount);
+        _balanceLP += amountLP;
 
         emit Stake(amount, amountLP, beneficiary);
     }
