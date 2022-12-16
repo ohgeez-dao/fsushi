@@ -8,7 +8,7 @@ import {
     UniswapV2Router02,
 } from "../../typechain-types";
 
-export const SUSHI_PER_BLOCK = 100;
+export const SUSHI_PER_BLOCK = constants.WeiPerEther.mul(100);
 
 const getBlockTimestamp = async () => {
     const { timestamp } = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
@@ -25,13 +25,7 @@ const setupSushiswap = async tokens => {
     const router = (await Router.deploy(factory.address, tokens.weth.address)) as UniswapV2Router02;
 
     const Chef = await ethers.getContractFactory("MasterChef");
-    const chef = (await Chef.deploy(
-        tokens.sushi.address,
-        deployer.address,
-        constants.WeiPerEther.mul(SUSHI_PER_BLOCK),
-        0,
-        0
-    )) as MasterChef;
+    const chef = (await Chef.deploy(tokens.sushi.address, deployer.address, SUSHI_PER_BLOCK, 0, 0)) as MasterChef;
     await tokens.sushi.transferOwnership(chef.address);
 
     const Bar = await ethers.getContractFactory("SushiBar");
@@ -40,10 +34,8 @@ const setupSushiswap = async tokens => {
     const addPool = async (tokenA, tokenB, allocPoint) => {
         const pid = await factory.allPairsLength();
         await factory.createPair(tokenA.address, tokenB.address);
-        const lpToken = UniswapV2Pair__factory.connect(
-            await factory.getPair(tokenA.address, tokenB.address),
-            ethers.provider
-        );
+        const pair = await factory.getPair(tokenA.address, tokenB.address);
+        const lpToken = UniswapV2Pair__factory.connect(pair, ethers.provider);
         await chef.add(allocPoint, lpToken.address, false);
         return { pid, lpToken };
     };

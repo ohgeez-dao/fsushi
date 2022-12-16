@@ -12,7 +12,11 @@ const setupTest = async () => {
     const strategy = (await Strategy.deploy(tokens.sushi.address, sushi.bar.address)) as SushiBarStrategy;
 
     const Factory = await ethers.getContractFactory("StakedLPTokenFactory");
-    const factory = (await Factory.deploy(sushi.chef.address, strategy.address)) as StakedLPTokenFactory;
+    const factory = (await Factory.deploy(
+        sushi.router.address,
+        sushi.chef.address,
+        strategy.address
+    )) as StakedLPTokenFactory;
 
     return {
         tokens,
