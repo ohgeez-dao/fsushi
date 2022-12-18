@@ -31,6 +31,10 @@ interface IStakedLPToken is IERC20 {
 
     function token1() external view returns (address);
 
+    function totalAmountLP() external view returns (uint256);
+
+    function amountLPOf(address account) external view returns (uint256);
+
     function totalShares() external view returns (uint256);
 
     function sharesOf(address account) external view returns (uint256);

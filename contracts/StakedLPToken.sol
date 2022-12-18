@@ -35,10 +35,10 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     address public override token0;
     address public override token1;
 
-    uint256 internal _balanceLP;
+    uint256 public override totalAmountLP;
     uint256 internal _pointsPerShare;
     mapping(address => int256) internal _pointsCorrection;
-    mapping(address => uint256) public _claimedYieldSharesOf;
+    mapping(address => uint256) internal _claimedYieldSharesOf;
 
     function initialize(
         address _router,
@@ -69,6 +69,12 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
             "1"
         );
         approveMax();
+    }
+
+    function amountLPOf(address account) external view override returns (uint256) {
+        uint256 total = totalShares();
+        if (total == 0) return 0;
+        return (sharesOf(account) * totalAmountLP) / total;
     }
 
     /**
@@ -154,6 +160,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     function approveMax() public override {
         IERC20(lpToken).approve(masterChef, type(uint256).max);
         IERC20(sushi).approve(IStakedLPTokenFactory(factory).yieldVault(), type(uint256).max);
+        IERC20(sushi).approve(router, type(uint256).max);
         IERC20(token0).approve(router, type(uint256).max);
         IERC20(token1).approve(router, type(uint256).max);
     }
@@ -215,7 +222,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         _depositSushi();
 
         _mint(beneficiary, amount);
-        _balanceLP += amountLP;
+        totalAmountLP += amountLP;
 
         emit Stake(amount, amountLP, beneficiary);
     }
@@ -243,7 +250,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         _depositSushi();
 
         _mint(beneficiary, amount);
-        _balanceLP += amountLP;
+        totalAmountLP += amountLP;
 
         emit Stake(amount, amountLP, beneficiary);
     }
@@ -252,7 +259,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
      * @dev when unstaking, the user's share of LP tokens are returned and pro-rata SUSHI yield is return as well
      */
     function unstake(uint256 shares, address beneficiary) external override nonReentrant {
-        uint256 amountLP = (shares * _balanceLP) / totalShares();
+        uint256 amountLP = (shares * totalAmountLP) / totalShares();
         IMasterChef(masterChef).withdraw(pid, amountLP);
 
         _claimSushi(shares, beneficiary);
@@ -260,7 +267,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         IERC20(lpToken).safeTransfer(beneficiary, amountLP);
 
         _burn(msg.sender, shares);
-        _balanceLP -= amountLP;
+        totalAmountLP -= amountLP;
 
         emit Unstake(shares, amountLP, beneficiary);
     }
