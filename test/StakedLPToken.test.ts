@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { BigNumber, constants, utils } from "ethers";
+import { BigNumber, constants } from "ethers";
 import { assert, expect } from "chai";
 import {
     IStakedLPToken__factory,
@@ -12,17 +12,12 @@ import {
 import setupSushiswap, { SUSHI_PER_BLOCK } from "./utils/setupSushiswap";
 import mineBlocks from "./utils/mineBlocks";
 import setupTokens from "./utils/setupTokens";
+import addressEquals from "./utils/addressEquals";
+import now from "./utils/now";
 
 const ONE = ethers.constants.WeiPerEther;
 const MINIMUM_LIQUIDITY = 1000;
 const DELTA = ethers.BigNumber.from(10).pow(8);
-
-const now = async () => {
-    const { timestamp } = await ethers.provider.getBlock(await ethers.provider.getBlockNumber());
-    return timestamp;
-};
-
-const equal = (addressA, addressB) => utils.getAddress(addressA) == utils.getAddress(addressB);
 
 const sqrt = value => {
     const one = ethers.BigNumber.from(1);
@@ -63,18 +58,18 @@ const setupTest = async () => {
     };
 
     const findPathToSushi = async tokenAddressIn => {
-        if (equal(tokenAddressIn, tokens.sushi.address)) {
+        if (addressEquals(tokenAddressIn, tokens.sushi.address)) {
             return [tokens.sushi.address];
         }
         const pair = await sushi.factory.getPair(tokenAddressIn, tokens.sushi.address);
-        if (equal(pair, constants.AddressZero)) {
+        if (addressEquals(pair, constants.AddressZero)) {
             const length = (await sushi.factory.allPairsLength()).toNumber();
             for (let i = 0; i < length; i++) {
                 const lpToken = UniswapV2Pair__factory.connect(await sushi.factory.allPairs(i), ethers.provider);
                 const token0 = await lpToken.token0();
                 const token1 = await lpToken.token1();
-                if (equal(tokenAddressIn, token0) || equal(tokenAddressIn, token1)) {
-                    const bridge = equal(tokenAddressIn, token0) ? token1 : token0;
+                if (addressEquals(tokenAddressIn, token0) || addressEquals(tokenAddressIn, token1)) {
+                    const bridge = addressEquals(tokenAddressIn, token0) ? token1 : token0;
                     if ((await sushi.factory.getPair(bridge, tokens.sushi.address)) != constants.AddressZero) {
                         return [tokenAddressIn, bridge, tokens.sushi.address];
                     }
@@ -87,7 +82,7 @@ const setupTest = async () => {
     };
 
     const findPathFromSushi = async tokenAddressOut => {
-        if (equal(tokenAddressOut, tokens.sushi.address)) {
+        if (addressEquals(tokenAddressOut, tokens.sushi.address)) {
             return [tokens.sushi.address];
         }
         const pair = await sushi.factory.getPair(tokens.sushi.address, tokenAddressOut);
@@ -120,7 +115,9 @@ const setupTest = async () => {
         const pair = await sushi.factory.getPair(tokenA.address, tokenB.address);
         expect(pair).not.equals(constants.AddressZero);
         const lpToken = await UniswapV2Pair__factory.connect(pair, ethers.provider);
-        const [token0, token1] = equal(await lpToken.token0(), tokenA.address) ? [tokenA, tokenB] : [tokenB, tokenA];
+        const [token0, token1] = addressEquals(await lpToken.token0(), tokenA.address)
+            ? [tokenA, tokenB]
+            : [tokenB, tokenA];
 
         const path0 = await findPathFromSushi(token0.address);
         const path1 = await findPathFromSushi(token1.address);
