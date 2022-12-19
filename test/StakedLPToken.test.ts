@@ -633,5 +633,64 @@ describe("StakedLPToken", function () {
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(7), DELTA);
             expect(await slpToken.balanceOf(alice.address)).to.be.approximately(0, DELTA);
         });
+
+        it("should unstake as SushiBar's balance increases for 1 account", async function () {
+            const { alice, tokens, sushi, createStakedLPToken, getStakeParameters } = await setupTest();
+
+            // 100 xSUSHI minted (100 xSUSHI => 100 SUSHI)
+            await tokens.sushi.approve(sushi.bar.address, constants.MaxUint256);
+            await sushi.bar.enter(SUSHI_PER_BLOCK);
+            expect(await sushi.bar.totalSupply()).to.be.equal(SUSHI_PER_BLOCK);
+            expect(await tokens.sushi.balanceOf(sushi.bar.address)).to.be.equal(SUSHI_PER_BLOCK);
+
+            // add SUSHI-WETH pool
+            const { pid, lpToken } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
+            const slpToken = await createStakedLPToken(pid);
+
+            await tokens.sushi.transfer(alice.address, ONE.mul(3).add(1000));
+            await tokens.weth.connect(alice).deposit({ value: ONE.mul(3).add(1000) });
+            await sushi.addLiquidity(alice, tokens.sushi, tokens.weth, ONE.mul(3).add(1000), ONE.mul(3).add(1000));
+
+            await lpToken.connect(alice).approve(slpToken.address, constants.MaxUint256);
+            const params = await getStakeParameters(lpToken, ONE.mul(3), alice);
+            const shares = params[3];
+            await slpToken.connect(alice).stake(...params);
+
+            // 300 SUSHI sent to SushiBar (100 xSUSHI => 400 SUSHI)
+            await tokens.sushi.transfer(sushi.bar.address, SUSHI_PER_BLOCK.mul(3));
+            expect(await sushi.bar.totalSupply()).to.be.equal(SUSHI_PER_BLOCK);
+            expect(await tokens.sushi.balanceOf(sushi.bar.address)).to.be.equal(SUSHI_PER_BLOCK.mul(4));
+            // 100 SUSHI is pending from MasterChef
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
+
+            await mineBlocks(2);
+            // 300 SUSHI is pending from MasterChef
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
+                SUSHI_PER_BLOCK.mul(3),
+                DELTA
+            );
+
+            // 1. deposit 400 SUSHI into SushiBar (200 xSUSHI => 800 SUSHI; 100 xSUSHI for alice)
+            // 2. withdraw 50 xSUSHI (150 xSUSHI => 600 SUSHI; 50 xSUSHI for alice)
+            await slpToken.connect(alice).unstake(shares.div(2), alice.address);
+            expect(await sushi.bar.totalSupply()).to.be.approximately(SUSHI_PER_BLOCK.mul(3).div(2), DELTA);
+            expect(await tokens.sushi.balanceOf(sushi.bar.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(6), DELTA);
+            expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(2), DELTA);
+
+            await mineBlocks(1);
+            // 200 SUSHI is pending from MasterChef
+            // 100 SUSHI is withdrawable from SushiBar
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
+                SUSHI_PER_BLOCK.mul(3),
+                DELTA
+            );
+
+            // 1. deposit 200 SUSHI into SushiBar (200 xSUSHI => 800 SUSHI; 100 xSUSHI for alice)
+            // 2. withdraw 50 xSUSHI (150 xSUSHI => 600 SUSHI; 50 xSUSHI for alice)
+            await slpToken.connect(alice).unstake(shares.div(4), alice.address);
+            expect(await sushi.bar.totalSupply()).to.be.approximately(SUSHI_PER_BLOCK.mul(3).div(2), DELTA);
+            expect(await tokens.sushi.balanceOf(sushi.bar.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(6), DELTA);
+            expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(4), DELTA);
+        });
     });
 });
