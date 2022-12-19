@@ -35,10 +35,10 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     address public override token0;
     address public override token1;
 
-    uint256 public override totalAmountLP;
+    uint256 public override withdrawableTotalLPs;
     uint256 internal _pointsPerShare;
     mapping(address => int256) internal _pointsCorrection;
-    mapping(address => uint256) internal _claimedYieldSharesOf;
+    mapping(address => uint256) internal _withdrawnYieldSharesOf;
 
     function initialize(
         address _router,
@@ -71,24 +71,24 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         approveMax();
     }
 
-    function amountLPOf(address account) external view override returns (uint256) {
+    function withdrawableLPsOf(address account) external view override returns (uint256) {
         uint256 total = totalShares();
         if (total == 0) return 0;
-        return (sharesOf(account) * totalAmountLP) / total;
+        return (sharesOf(account) * withdrawableTotalLPs) / total;
     }
 
     /**
-     * @return Sum of (shares in SUSHI) + (claimable total SUSHI)
+     * @return Sum of (shares in SUSHI) + (withdrawable total SUSHI)
      */
     function totalSupply() public view override(BaseERC20, IERC20) returns (uint256) {
-        return totalShares() + claimableTotalYield();
+        return totalShares() + withdrawableTotalYield();
     }
 
     /**
-     * @return Sum of (shares in SUSHI by staked account) + (SUSHI claimable by account)
+     * @return Sum of (shares in SUSHI by staked account) + (SUSHI withdrawable by account)
      */
     function balanceOf(address account) public view override(BaseERC20, IERC20) returns (uint256) {
-        return sharesOf(account) + claimableYieldOf(account);
+        return sharesOf(account) + withdrawableYieldOf(account);
     }
 
     /**
@@ -106,38 +106,38 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     }
 
     /**
-     * @dev Returns the total amount of SUSHI if every holder wants to claim at once
+     * @dev Returns the total amount of SUSHI if every holder wants to withdraw at once
      * @return A uint256 representing the total SUSHI
      */
-    function claimableTotalYield() public view override returns (uint256) {
+    function withdrawableTotalYield() public view override returns (uint256) {
         address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
         uint256 pendingSushi = IMasterChef(masterChef).pendingSushi(pid, address(this));
         return pendingSushi + IERC4626(yieldVault).convertToAssets(IERC4626(yieldVault).balanceOf(address(this)));
     }
 
     /**
-     * @dev Returns the amount of SUSHI a given address is able to claim.
+     * @dev Returns the amount of SUSHI a given address is able to withdraw.
      * @param account Address of a reward recipient
-     * @return A uint256 representing the SUSHI `account` can claim
+     * @return A uint256 representing the SUSHI `account` can withdraw
      */
-    function claimableYieldOf(address account) public view override returns (uint256) {
+    function withdrawableYieldOf(address account) public view override returns (uint256) {
         address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
-        return IERC4626(yieldVault).convertToAssets((_claimableYieldSharesOf(account, true)));
+        return IERC4626(yieldVault).convertToAssets((_withdrawableYieldSharesOf(account, true)));
     }
 
     /**
      * @dev Shares are used to record reward debt for account. SUSHI will accumulate so we don't record SUSHI amount.
      * @param account Address of a reward recipient
      * @param pending if true, it adds the amount of MasterChef.pendingSushi()
-     * @return A uint256 representing the SUSHI `account` can claim
+     * @return A uint256 representing the SUSHI `account` can withdraw
      */
-    function _claimableYieldSharesOf(address account, bool pending) internal view returns (uint256) {
-        return _cumulativeYieldSharesOf(account, pending) - _claimedYieldSharesOf[account];
+    function _withdrawableYieldSharesOf(address account, bool pending) internal view returns (uint256) {
+        return _cumulativeYieldSharesOf(account, pending) - _withdrawnYieldSharesOf[account];
     }
 
     /**
      * @notice View the amount of shares that an address has earned in total.
-     * @dev cumulativeYieldSharesOf(account) = claimableYieldSharesOf(account) + claimedYieldSharesOf(account)
+     * @dev cumulativeYieldSharesOf(account) = withdrawableYieldSharesOf(account) + withdrawedYieldSharesOf(account)
      *  = (pointsPerShare * sharesOf(account) + pointsCorrection[account]) / POINTS_MULTIPLIER
      * @param account The address of a token holder.
      * @return The amount of SUSHI that `account` has earned in total.
@@ -222,7 +222,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         _depositSushi();
 
         _mint(beneficiary, amount);
-        totalAmountLP += amountLP;
+        withdrawableTotalLPs += amountLP;
 
         emit Stake(amount, amountLP, beneficiary);
     }
@@ -250,7 +250,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         _depositSushi();
 
         _mint(beneficiary, amount);
-        totalAmountLP += amountLP;
+        withdrawableTotalLPs += amountLP;
 
         emit Stake(amount, amountLP, beneficiary);
     }
@@ -259,39 +259,39 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
      * @dev when unstaking, the user's share of LP tokens are returned and pro-rata SUSHI yield is return as well
      */
     function unstake(uint256 shares, address beneficiary) external override nonReentrant {
-        uint256 amountLP = (shares * totalAmountLP) / totalShares();
+        uint256 amountLP = (shares * withdrawableTotalLPs) / totalShares();
         IMasterChef(masterChef).withdraw(pid, amountLP);
 
-        _claimSushi(shares, beneficiary);
+        _withdrawSushi(shares, beneficiary);
 
         IERC20(lpToken).safeTransfer(beneficiary, amountLP);
 
         _burn(msg.sender, shares);
-        totalAmountLP -= amountLP;
+        withdrawableTotalLPs -= amountLP;
 
         emit Unstake(shares, amountLP, beneficiary);
     }
 
-    function _claimSushi(uint256 shares, address beneficiary) internal {
+    function _withdrawSushi(uint256 shares, address beneficiary) internal {
         _depositSushi();
 
         uint256 sharesMax = sharesOf(msg.sender);
         if (shares > sharesMax) revert InsufficientAmount();
 
         address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
-        uint256 claimableShares = _claimableYieldSharesOf(msg.sender, false);
-        if (claimableShares == 0) revert InsufficientYield();
+        uint256 withdrawableShares = _withdrawableYieldSharesOf(msg.sender, false);
+        if (withdrawableShares == 0) revert InsufficientYield();
 
-        uint256 yieldShares = (claimableShares * shares) / sharesMax;
-        _claimedYieldSharesOf[msg.sender] += yieldShares;
+        uint256 yieldShares = (withdrawableShares * shares) / sharesMax;
+        _withdrawnYieldSharesOf[msg.sender] += yieldShares;
 
         uint256 yield = IERC4626(yieldVault).redeem(yieldShares, beneficiary, address(this));
 
-        emit ClaimSushi(shares, yield, beneficiary);
+        emit WithdrawSushi(shares, yield, beneficiary);
     }
 
     /**
-     * @dev claims pending SUSHI from MasterChef and add it to the balance
+     * @dev withdraws pending SUSHI from MasterChef and add it to the balance
      */
     function checkpoint() external override nonReentrant {
         IMasterChef(masterChef).deposit(pid, 0);

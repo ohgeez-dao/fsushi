@@ -189,7 +189,10 @@ describe("StakedLPToken", function () {
             expect(await slpToken.balanceOf(alice.address)).to.be.equal(shares);
 
             await mineBlocks(32);
-            expect(await slpToken.claimableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(32), DELTA);
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
+                SUSHI_PER_BLOCK.mul(32),
+                DELTA
+            );
 
             await slpToken.connect(alice).unstake(shares, alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.equal(ONE);
@@ -231,10 +234,10 @@ describe("StakedLPToken", function () {
             await slpToken.connect(bob).stake(...paramsB);
             expect(await slpToken.sharesOf(bob.address)).to.be.equal(sharesB);
             expect(await vault.balanceOf(slpToken.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
-            expect(await slpToken.claimableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
 
             await mineBlocks(29);
-            expect(await slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.add(SUSHI_PER_BLOCK.mul(29).div(2)),
                 DELTA
             );
@@ -242,15 +245,15 @@ describe("StakedLPToken", function () {
             await slpToken.connect(alice).unstake(sharesA, alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.equal(ONE);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(16), DELTA);
-            expect(await slpToken.claimableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(15), DELTA);
+            expect(await slpToken.withdrawableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(15), DELTA);
             expect(await vault.balanceOf(slpToken.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(15), DELTA);
 
             await mineBlocks(32);
-            expect(await slpToken.claimableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(47), DELTA);
+            expect(await slpToken.withdrawableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(47), DELTA);
 
             await slpToken.connect(bob).unstake(sharesB, bob.address);
             expect(await tokens.sushi.balanceOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(48), DELTA);
-            expect(await slpToken.claimableYieldOf(bob.address)).to.be.equal(0);
+            expect(await slpToken.withdrawableYieldOf(bob.address)).to.be.equal(0);
             expect(await vault.balanceOf(slpToken.address)).to.be.approximately(0, DELTA);
 
             await mineBlocks(31);
@@ -295,18 +298,18 @@ describe("StakedLPToken", function () {
                 shares.push(params[3]);
                 await pool.slpToken.connect(alice).stake(...params);
             }
-            expect(await pools[0].slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await pools[0].slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.mul(2),
                 DELTA
             );
-            expect(await pools[1].slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await pools[1].slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.div(2),
                 DELTA
             );
-            expect(await pools[2].slpToken.claimableYieldOf(alice.address)).to.be.equal(0);
+            expect(await pools[2].slpToken.withdrawableYieldOf(alice.address)).to.be.equal(0);
 
             await mineBlocks(27);
-            expect(await pools[0].slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await pools[0].slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.mul(155).div(10),
                 DELTA
             );
@@ -316,7 +319,7 @@ describe("StakedLPToken", function () {
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(16), DELTA);
 
             await mineBlocks(33);
-            expect(await pools[1].slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await pools[1].slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.mul(1575).div(100),
                 DELTA
             );
@@ -326,7 +329,7 @@ describe("StakedLPToken", function () {
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(32), DELTA);
 
             await mineBlocks(33);
-            expect(await pools[2].slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await pools[2].slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.mul(2375).div(100),
                 DELTA
             );
@@ -371,7 +374,7 @@ describe("StakedLPToken", function () {
 
             const slpToken = await createStakedLPToken(pid);
             const getAmountLP = async shares =>
-                await shares.mul(await slpToken.totalAmountLP()).div(await slpToken.totalShares());
+                await shares.mul(await slpToken.withdrawableTotalLPs()).div(await slpToken.totalShares());
 
             await tokens.sushi.transfer(alice.address, ONE.add(1000));
             await tokens.sushi.connect(alice).approve(slpToken.address, constants.MaxUint256);
@@ -381,7 +384,10 @@ describe("StakedLPToken", function () {
             expect(await slpToken.balanceOf(alice.address)).to.be.equal(ONE);
 
             await mineBlocks(32);
-            expect(await slpToken.claimableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(32), DELTA);
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
+                SUSHI_PER_BLOCK.mul(32),
+                DELTA
+            );
             expect(await vault.balanceOf(slpToken.address)).to.be.equal(0);
 
             const amountLP = await getAmountLP(ONE);
@@ -425,7 +431,7 @@ describe("StakedLPToken", function () {
             );
             const slpToken = await createStakedLPToken(pid);
             const getAmountLP = async shares =>
-                await shares.mul(await slpToken.totalAmountLP()).div(await slpToken.totalShares());
+                await shares.mul(await slpToken.withdrawableTotalLPs()).div(await slpToken.totalShares());
 
             await tokens.sushi.transfer(alice.address, ONE);
             await tokens.sushi.transfer(bob.address, ONE);
@@ -441,10 +447,10 @@ describe("StakedLPToken", function () {
             await stakeWithSushi(bob, slpToken, ONE, tokens.usdc, tokens.weth);
             expect(await slpToken.sharesOf(bob.address)).to.be.equal(ONE);
             expect(await vault.balanceOf(slpToken.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
-            expect(await slpToken.claimableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
 
             await mineBlocks(29);
-            expect(await slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.add(SUSHI_PER_BLOCK.mul(29).div(2)),
                 DELTA
             );
@@ -453,17 +459,17 @@ describe("StakedLPToken", function () {
             await slpToken.connect(alice).unstake(ONE, alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.approximately(amountLPA, DELTA);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(16), DELTA);
-            expect(await slpToken.claimableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(15), DELTA);
+            expect(await slpToken.withdrawableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(15), DELTA);
             expect(await vault.balanceOf(slpToken.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(15), DELTA);
 
             await mineBlocks(32);
-            expect(await slpToken.claimableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(47), DELTA);
+            expect(await slpToken.withdrawableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(47), DELTA);
 
             const amountLPB = await getAmountLP(ONE);
             await slpToken.connect(bob).unstake(ONE, bob.address);
             expect(await lpToken.balanceOf(bob.address)).to.be.equal(amountLPB);
             expect(await tokens.sushi.balanceOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(48), DELTA);
-            expect(await slpToken.claimableYieldOf(bob.address)).to.be.equal(0);
+            expect(await slpToken.withdrawableYieldOf(bob.address)).to.be.equal(0);
             expect(await vault.balanceOf(slpToken.address)).to.be.approximately(0, DELTA);
 
             await mineBlocks(31);
@@ -472,13 +478,16 @@ describe("StakedLPToken", function () {
             expect(await slpToken.sharesOf(carol.address)).to.be.equal(ONE);
 
             await mineBlocks(31);
-            expect(await slpToken.claimableYieldOf(carol.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(31), DELTA);
+            expect(await slpToken.withdrawableYieldOf(carol.address)).to.be.approximately(
+                SUSHI_PER_BLOCK.mul(31),
+                DELTA
+            );
 
             const amountLPC = await getAmountLP(ONE);
             await slpToken.connect(carol).unstake(ONE, carol.address);
             expect(await lpToken.balanceOf(carol.address)).to.be.equal(amountLPC);
             expect(await tokens.sushi.balanceOf(carol.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(32), DELTA);
-            expect(await slpToken.claimableYieldOf(bob.address)).to.be.equal(0);
+            expect(await slpToken.withdrawableYieldOf(bob.address)).to.be.equal(0);
             expect(await vault.balanceOf(slpToken.address)).to.be.approximately(0, DELTA);
         });
 
@@ -506,7 +515,7 @@ describe("StakedLPToken", function () {
                     token0,
                     token1,
                     getAmountLP: async shares =>
-                        await shares.mul(await slpToken.totalAmountLP()).div(await slpToken.totalShares()),
+                        await shares.mul(await slpToken.withdrawableTotalLPs()).div(await slpToken.totalShares()),
                 });
             }
 
@@ -519,18 +528,18 @@ describe("StakedLPToken", function () {
                 await tokens.sushi.connect(alice).approve(pool.slpToken.address, constants.MaxUint256);
                 await stakeWithSushi(alice, pool.slpToken, ONE, pool.token0, pool.token1);
             }
-            expect(await pools[0].slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await pools[0].slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.mul(2),
                 DELTA
             );
-            expect(await pools[1].slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await pools[1].slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.div(2),
                 DELTA
             );
-            expect(await pools[2].slpToken.claimableYieldOf(alice.address)).to.be.equal(0);
+            expect(await pools[2].slpToken.withdrawableYieldOf(alice.address)).to.be.equal(0);
 
             await mineBlocks(27);
-            expect(await pools[0].slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await pools[0].slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.mul(155).div(10),
                 DELTA
             );
@@ -541,7 +550,7 @@ describe("StakedLPToken", function () {
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(16), DELTA);
 
             await mineBlocks(33);
-            expect(await pools[1].slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await pools[1].slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.mul(1575).div(100),
                 DELTA
             );
@@ -552,7 +561,7 @@ describe("StakedLPToken", function () {
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(32), DELTA);
 
             await mineBlocks(33);
-            expect(await pools[2].slpToken.claimableYieldOf(alice.address)).to.be.approximately(
+            expect(await pools[2].slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.mul(2375).div(100),
                 DELTA
             );
@@ -582,19 +591,28 @@ describe("StakedLPToken", function () {
             await slpToken.connect(alice).stake(...params);
 
             await mineBlocks(2);
-            expect(await slpToken.claimableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(2), DELTA);
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
+                SUSHI_PER_BLOCK.mul(2),
+                DELTA
+            );
 
             await slpToken.connect(alice).unstake(shares.div(3), alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.approximately(ONE.mul(1), DELTA);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
-            expect(await slpToken.claimableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(2), DELTA);
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
+                SUSHI_PER_BLOCK.mul(2),
+                DELTA
+            );
             expect(await slpToken.balanceOf(alice.address)).to.be.approximately(
                 shares.mul(2).div(3).add(SUSHI_PER_BLOCK.mul(2)),
                 DELTA
             );
 
             await mineBlocks(1);
-            expect(await slpToken.claimableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(3), DELTA);
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
+                SUSHI_PER_BLOCK.mul(3),
+                DELTA
+            );
 
             await slpToken.connect(alice).unstake(shares.div(3), alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.approximately(ONE.mul(2), DELTA);
@@ -605,7 +623,10 @@ describe("StakedLPToken", function () {
             );
 
             await mineBlocks(1);
-            expect(await slpToken.claimableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(3), DELTA);
+            expect(await slpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
+                SUSHI_PER_BLOCK.mul(3),
+                DELTA
+            );
 
             await slpToken.connect(alice).unstake(shares.div(3), alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.approximately(ONE.mul(3), DELTA);

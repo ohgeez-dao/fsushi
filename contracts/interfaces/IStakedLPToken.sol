@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 interface IStakedLPToken is IERC20 {
     event Stake(uint256 shares, uint256 amountLP, address indexed beneficiary);
     event Unstake(uint256 shares, uint256 amountLP, address indexed beneficiary);
-    event ClaimSushi(uint256 shares, uint256 yield, address indexed beneficiary);
+    event WithdrawSushi(uint256 shares, uint256 yield, address indexed beneficiary);
 
     function initialize(
         address _router,
@@ -31,17 +31,17 @@ interface IStakedLPToken is IERC20 {
 
     function token1() external view returns (address);
 
-    function totalAmountLP() external view returns (uint256);
+    function withdrawableTotalLPs() external view returns (uint256);
 
-    function amountLPOf(address account) external view returns (uint256);
+    function withdrawableLPsOf(address account) external view returns (uint256);
+
+    function withdrawableTotalYield() external view returns (uint256);
+
+    function withdrawableYieldOf(address account) external view returns (uint256);
 
     function totalShares() external view returns (uint256);
 
     function sharesOf(address account) external view returns (uint256);
-
-    function claimableTotalYield() external view returns (uint256);
-
-    function claimableYieldOf(address account) external view returns (uint256);
 
     function approveMax() external;
 
