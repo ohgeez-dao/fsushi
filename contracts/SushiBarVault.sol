@@ -19,7 +19,27 @@ contract SushiBarVault is ERC4626 {
     }
 
     function totalAssets() public view override returns (uint256) {
-        return IERC20(_sushi).balanceOf(address(_sushiBar));
+        uint256 total = IERC20(_sushiBar).totalSupply();
+        return
+            total == 0
+                ? 0
+                : (IERC20(_sushi).balanceOf(address(_sushiBar)) * IERC20(_sushiBar).balanceOf(address(this))) / total;
+    }
+
+    function _initialConvertToShares(
+        uint256 assets,
+        Math.Rounding /*rounding*/
+    ) internal view override returns (uint256 shares) {
+        uint256 balance = IERC20(_sushi).balanceOf(address(_sushiBar));
+        return balance == 0 ? assets : (assets * IERC20(_sushiBar).totalSupply()) / balance;
+    }
+
+    function _initialConvertToAssets(
+        uint256 shares,
+        Math.Rounding /*rounding*/
+    ) internal view override returns (uint256 assets) {
+        uint256 total = IERC20(_sushiBar).totalSupply();
+        return total == 0 ? shares : (shares * IERC20(_sushi).balanceOf(address(_sushiBar))) / total;
     }
 
     function approveMax() public {

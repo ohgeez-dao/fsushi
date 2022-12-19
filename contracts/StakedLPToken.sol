@@ -38,7 +38,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     uint256 public override withdrawableTotalLPs;
     uint256 internal _pointsPerShare;
     mapping(address => int256) internal _pointsCorrection;
-    mapping(address => uint256) internal _withdrawnYieldSharesOf;
+    mapping(address => uint256) internal _withdrawnVaultBalanceOf;
 
     function initialize(
         address _router,
@@ -112,7 +112,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     function withdrawableTotalYield() public view override returns (uint256) {
         address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
         uint256 pendingSushi = IMasterChef(masterChef).pendingSushi(pid, address(this));
-        return pendingSushi + IERC4626(yieldVault).convertToAssets(IERC4626(yieldVault).balanceOf(address(this)));
+        return pendingSushi + IERC4626(yieldVault).maxWithdraw(address(this));
     }
 
     /**
@@ -122,34 +122,35 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
      */
     function withdrawableYieldOf(address account) public view override returns (uint256) {
         address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
-        return IERC4626(yieldVault).convertToAssets((_withdrawableYieldSharesOf(account, true)));
+        return IERC4626(yieldVault).convertToAssets((_withdrawableVaultBalanceOf(account, true)));
     }
 
     /**
-     * @dev Shares are used to record reward debt for account. SUSHI will accumulate so we don't record SUSHI amount.
+     * @dev Vault balance is used to record reward debt for account.
      * @param account Address of a reward recipient
-     * @param pending if true, it adds the amount of MasterChef.pendingSushi()
+     * @param preview if true, it adds the amount of MasterChef.pendingSushi()
      * @return A uint256 representing the SUSHI `account` can withdraw
      */
-    function _withdrawableYieldSharesOf(address account, bool pending) internal view returns (uint256) {
-        return _cumulativeYieldSharesOf(account, pending) - _withdrawnYieldSharesOf[account];
+    function _withdrawableVaultBalanceOf(address account, bool preview) internal view returns (uint256) {
+        return _cumulativeVaultBalanceOf(account, preview) - _withdrawnVaultBalanceOf[account];
     }
 
     /**
-     * @notice View the amount of shares that an address has earned in total.
-     * @dev cumulativeYieldSharesOf(account) = withdrawableYieldSharesOf(account) + withdrawedYieldSharesOf(account)
+     * @notice View the amount of vault balance that an address has earned in total.
+     * @dev cumulativeVaultBalanceOf(account) = withdrawableVaultBalanceOf(account) + withdrawnVaultBalanceOf(account)
      *  = (pointsPerShare * sharesOf(account) + pointsCorrection[account]) / POINTS_MULTIPLIER
      * @param account The address of a token holder.
+     * @param preview if true, it adds the amount of MasterChef.pendingSushi()
      * @return The amount of SUSHI that `account` has earned in total.
      */
-    function _cumulativeYieldSharesOf(address account, bool pending) internal view returns (uint256) {
+    function _cumulativeVaultBalanceOf(address account, bool preview) internal view returns (uint256) {
         uint256 pointsPerShare = _pointsPerShare;
-        if (pending) {
-            uint256 pendingSushi = IMasterChef(masterChef).pendingSushi(pid, address(this));
-            address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
+        if (preview) {
             uint256 total = totalShares();
             if (total > 0) {
-                pointsPerShare += (IERC4626(yieldVault).convertToShares(pendingSushi) * POINTS_MULTIPLIER) / total;
+                address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
+                uint256 pendingSushi = IMasterChef(masterChef).pendingSushi(pid, address(this));
+                pointsPerShare += (IERC4626(yieldVault).previewDeposit(pendingSushi) * POINTS_MULTIPLIER) / total;
             }
         }
         return
@@ -279,11 +280,11 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         if (shares > sharesMax) revert InsufficientAmount();
 
         address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
-        uint256 withdrawableShares = _withdrawableYieldSharesOf(msg.sender, false);
-        if (withdrawableShares == 0) revert InsufficientYield();
+        uint256 withdrawable = _withdrawableVaultBalanceOf(msg.sender, false);
+        if (withdrawable == 0) revert InsufficientYield();
 
-        uint256 yieldShares = (withdrawableShares * shares) / sharesMax;
-        _withdrawnYieldSharesOf[msg.sender] += yieldShares;
+        uint256 yieldShares = (withdrawable * shares) / sharesMax;
+        _withdrawnVaultBalanceOf[msg.sender] += yieldShares;
 
         uint256 yield = IERC4626(yieldVault).redeem(yieldShares, beneficiary, address(this));
 
@@ -302,11 +303,11 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         uint256 balance = IERC20(sushi).balanceOf(address(this));
         if (balance > 0) {
             address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
-            IERC4626(yieldVault).deposit(balance, address(this));
+            uint256 yieldBalance = IERC4626(yieldVault).deposit(balance, address(this));
 
             uint256 total = totalShares();
             if (total > 0) {
-                _pointsPerShare += (balance * POINTS_MULTIPLIER) / total;
+                _pointsPerShare += (yieldBalance * POINTS_MULTIPLIER) / total;
             }
         }
     }
