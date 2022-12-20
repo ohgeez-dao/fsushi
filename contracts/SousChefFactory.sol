@@ -15,9 +15,9 @@ contract SousChefFactory is Ownable, ISousChefFactory {
      */
     address public immutable override flashProtocol;
     /**
-     * @notice address of StakedLPTokenFactory
+     * @notice address of AccruedLPTokenFactory
      */
-    address public immutable override slpTokenFactory;
+    address public immutable override alpTokenFactory;
 
     address internal immutable _implementation;
 
@@ -38,13 +38,13 @@ contract SousChefFactory is Ownable, ISousChefFactory {
 
     constructor(
         address _flashProtocol,
-        address _slpTokenFactory,
+        address _alpTokenFactory,
         uint256 _stakeFeeBPS,
         uint256 _flashStakeFeeBPS,
         address _feeRecipient
     ) {
         flashProtocol = _flashProtocol;
-        slpTokenFactory = _slpTokenFactory;
+        alpTokenFactory = _alpTokenFactory;
         updateStakeFeeBPS(_stakeFeeBPS);
         updateFlashStakeFeeBPS(_flashStakeFeeBPS);
         updateFeeRecipient(_feeRecipient);
@@ -85,7 +85,7 @@ contract SousChefFactory is Ownable, ISousChefFactory {
         if (getSousChef[pid] != address(0)) revert SousChefCreated();
 
         chef = Clones.cloneDeterministic(_implementation, bytes32(pid));
-        SousChef(chef).initialize(flashProtocol, slpTokenFactory, pid);
+        SousChef(chef).initialize(flashProtocol, alpTokenFactory, pid);
 
         getSousChef[pid] = chef;
 

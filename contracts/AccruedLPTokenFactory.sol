@@ -4,16 +4,16 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IStakedLPTokenFactory.sol";
-import "./StakedLPToken.sol";
+import "./interfaces/IAccruedLPTokenFactory.sol";
+import "./AccruedLPToken.sol";
 
-contract StakedLPTokenFactory is Ownable, IStakedLPTokenFactory {
+contract AccruedLPTokenFactory is Ownable, IAccruedLPTokenFactory {
     address public immutable override router;
     address public immutable override masterChef;
     address internal immutable _implementation;
 
     address public override yieldVault;
-    mapping(uint256 => address) public override getStakedLPToken;
+    mapping(uint256 => address) public override getAccruedLPToken;
 
     constructor(
         address _router,
@@ -23,11 +23,11 @@ contract StakedLPTokenFactory is Ownable, IStakedLPTokenFactory {
         router = _router;
         masterChef = _masterChef;
         yieldVault = _yieldVault;
-        StakedLPToken token = new StakedLPToken();
+        AccruedLPToken token = new AccruedLPToken();
         _implementation = address(token);
     }
 
-    function predictStakedLPTokenAddress(uint256 pid) external view override returns (address token) {
+    function predictAccruedLPTokenAddress(uint256 pid) external view override returns (address token) {
         token = Clones.predictDeterministicAddress(_implementation, bytes32(pid));
     }
 
@@ -38,14 +38,14 @@ contract StakedLPTokenFactory is Ownable, IStakedLPTokenFactory {
         emit UpdateVault(vault);
     }
 
-    function createStakedLPToken(uint256 pid) external override returns (address token) {
-        if (getStakedLPToken[pid] != address(0)) revert TokenCreated();
+    function createAccruedLPToken(uint256 pid) external override returns (address token) {
+        if (getAccruedLPToken[pid] != address(0)) revert TokenCreated();
 
         token = Clones.cloneDeterministic(_implementation, bytes32(pid));
-        StakedLPToken(token).initialize(router, masterChef, pid);
+        AccruedLPToken(token).initialize(router, masterChef, pid);
 
-        getStakedLPToken[pid] = token;
+        getAccruedLPToken[pid] = token;
 
-        emit CreateStakedLPToken(pid, token);
+        emit CreateAccruedLPToken(pid, token);
     }
 }

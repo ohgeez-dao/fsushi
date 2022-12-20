@@ -9,13 +9,13 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Router02.sol";
-import "./interfaces/IStakedLPToken.sol";
-import "./interfaces/IStakedLPTokenFactory.sol";
+import "./interfaces/IAccruedLPToken.sol";
+import "./interfaces/IAccruedLPTokenFactory.sol";
 import "./interfaces/IMasterChef.sol";
 import "./libraries/UniswapV2Utils.sol";
 import "./base/BaseERC20.sol";
 
-contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
+contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
     using SafeCast for int256;
@@ -59,13 +59,13 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
 
         BaseERC20_initialize(
             string.concat(
-                "Staked LP Token (",
+                "Accrued LP Token (",
                 IERC20Metadata(_token0).name(),
                 "-",
                 IERC20Metadata(_token1).name(),
                 ")"
             ),
-            string.concat("SLP:", IERC20Metadata(_token0).symbol(), "-", IERC20Metadata(_token1).symbol()),
+            string.concat("aLP:", IERC20Metadata(_token0).symbol(), "-", IERC20Metadata(_token1).symbol()),
             "1"
         );
         approveMax();
@@ -110,7 +110,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
      * @return A uint256 representing the total SUSHI
      */
     function withdrawableTotalYield() public view override returns (uint256) {
-        address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
+        address yieldVault = IAccruedLPTokenFactory(factory).yieldVault();
         uint256 pendingSushi = IMasterChef(masterChef).pendingSushi(pid, address(this));
         return pendingSushi + IERC4626(yieldVault).maxWithdraw(address(this));
     }
@@ -121,7 +121,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
      * @return A uint256 representing the SUSHI `account` can withdraw
      */
     function withdrawableYieldOf(address account) public view override returns (uint256) {
-        address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
+        address yieldVault = IAccruedLPTokenFactory(factory).yieldVault();
         return IERC4626(yieldVault).convertToAssets((_withdrawableVaultBalanceOf(account, true)));
     }
 
@@ -148,7 +148,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         if (preview) {
             uint256 total = totalShares();
             if (total > 0) {
-                address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
+                address yieldVault = IAccruedLPTokenFactory(factory).yieldVault();
                 uint256 pendingSushi = IMasterChef(masterChef).pendingSushi(pid, address(this));
                 pointsPerShare += (IERC4626(yieldVault).previewDeposit(pendingSushi) * POINTS_MULTIPLIER) / total;
             }
@@ -160,7 +160,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
 
     function approveMax() public override {
         IERC20(lpToken).approve(masterChef, type(uint256).max);
-        IERC20(sushi).approve(IStakedLPTokenFactory(factory).yieldVault(), type(uint256).max);
+        IERC20(sushi).approve(IAccruedLPTokenFactory(factory).yieldVault(), type(uint256).max);
         IERC20(sushi).approve(router, type(uint256).max);
         IERC20(token0).approve(router, type(uint256).max);
         IERC20(token1).approve(router, type(uint256).max);
@@ -279,7 +279,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
         uint256 sharesMax = sharesOf(msg.sender);
         if (shares > sharesMax) revert InsufficientAmount();
 
-        address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
+        address yieldVault = IAccruedLPTokenFactory(factory).yieldVault();
         uint256 withdrawable = _withdrawableVaultBalanceOf(msg.sender, false);
         if (withdrawable == 0) revert InsufficientYield();
 
@@ -302,7 +302,7 @@ contract StakedLPToken is BaseERC20, ReentrancyGuard, IStakedLPToken {
     function _depositSushi() internal {
         uint256 balance = IERC20(sushi).balanceOf(address(this));
         if (balance > 0) {
-            address yieldVault = IStakedLPTokenFactory(factory).yieldVault();
+            address yieldVault = IAccruedLPTokenFactory(factory).yieldVault();
             uint256 yieldBalance = IERC4626(yieldVault).deposit(balance, address(this));
 
             uint256 total = totalShares();

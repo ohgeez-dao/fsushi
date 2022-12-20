@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-interface IStakedLPTokenFactory {
+interface IAccruedLPTokenFactory {
     error InvalidAddress();
     error TokenCreated();
 
     event UpdateVault(address indexed vault);
-    event CreateStakedLPToken(uint256 indexed pid, address indexed token);
+    event CreateAccruedLPToken(uint256 indexed pid, address indexed token);
 
     function router() external view returns (address);
 
@@ -15,11 +15,11 @@ interface IStakedLPTokenFactory {
 
     function yieldVault() external view returns (address);
 
-    function getStakedLPToken(uint256 pid) external view returns (address);
+    function getAccruedLPToken(uint256 pid) external view returns (address);
 
-    function predictStakedLPTokenAddress(uint256 pid) external view returns (address token);
+    function predictAccruedLPTokenAddress(uint256 pid) external view returns (address token);
 
     function updateYieldVault(address vault) external;
 
-    function createStakedLPToken(uint256 pid) external returns (address token);
+    function createAccruedLPToken(uint256 pid) external returns (address token);
 }

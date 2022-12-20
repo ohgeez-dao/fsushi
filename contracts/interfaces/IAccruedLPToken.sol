@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IStakedLPToken is IERC20 {
+interface IAccruedLPToken is IERC20 {
     event Stake(uint256 shares, uint256 amountLP, address indexed beneficiary);
     event Unstake(uint256 shares, uint256 amountLP, address indexed beneficiary);
     event WithdrawSushi(uint256 shares, uint256 yield, address indexed beneficiary);

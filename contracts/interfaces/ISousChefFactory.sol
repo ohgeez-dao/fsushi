@@ -14,7 +14,7 @@ interface ISousChefFactory {
 
     function flashProtocol() external view returns (address);
 
-    function slpTokenFactory() external view returns (address);
+    function alpTokenFactory() external view returns (address);
 
     function stakeFeeBPS() external view returns (uint256);
 

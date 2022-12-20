@@ -13,11 +13,11 @@ interface ISousChef is IFlashStrategy {
 
     function sushi() external view returns (address);
 
-    function slpToken() external view returns (address);
+    function alpToken() external view returns (address);
 
     function initialize(
         address _flashProtocol,
-        address _slpTokenFactory,
+        address _alpTokenFactory,
         uint256 _pid
     ) external;
 }

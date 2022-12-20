@@ -9,8 +9,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/ISousChef.sol";
 import "./interfaces/ISousChefFactory.sol";
 import "./interfaces/IFlashFToken.sol";
-import "./interfaces/IStakedLPTokenFactory.sol";
-import "./interfaces/IStakedLPToken.sol";
+import "./interfaces/IAccruedLPTokenFactory.sol";
+import "./interfaces/IAccruedLPToken.sol";
 import "./interfaces/IFeeVault.sol";
 
 contract SousChef is Initializable, ReentrancyGuard, ISousChef {
@@ -35,9 +35,9 @@ contract SousChef is Initializable, ReentrancyGuard, ISousChef {
      */
     address public override sushi;
     /**
-     * @notice address of StakedLPToken
+     * @notice address of AccruedLPToken
      */
-    address public override slpToken;
+    address public override alpToken;
 
     uint256 internal _balancePrincipal;
 
@@ -48,18 +48,18 @@ contract SousChef is Initializable, ReentrancyGuard, ISousChef {
 
     function initialize(
         address _flashProtocol,
-        address _slpTokenFactory,
+        address _alpTokenFactory,
         uint256 _pid
     ) external override initializer {
         if (_flashProtocol == address(0)) revert InvalidFlashProtocol();
 
-        address _slpToken = IStakedLPTokenFactory(_slpTokenFactory).getStakedLPToken(_pid);
-        if (_slpToken == address(0)) _slpToken = IStakedLPTokenFactory(_slpTokenFactory).createStakedLPToken(_pid);
+        address _alpToken = IAccruedLPTokenFactory(_alpTokenFactory).getAccruedLPToken(_pid);
+        if (_alpToken == address(0)) _alpToken = IAccruedLPTokenFactory(_alpTokenFactory).createAccruedLPToken(_pid);
 
         factory = msg.sender;
         flashProtocol = _flashProtocol;
-        sushi = IStakedLPToken(_slpToken).sushi();
-        slpToken = _slpToken;
+        sushi = IAccruedLPToken(_alpToken).sushi();
+        alpToken = _alpToken;
     }
 
     modifier onlyAuthorised() {
@@ -78,14 +78,14 @@ contract SousChef is Initializable, ReentrancyGuard, ISousChef {
      * @return amount of yield tokens that can be rewarded in SUSHI
      */
     function getYieldBalance() public view override returns (uint256) {
-        return IStakedLPToken(slpToken).withdrawableYieldOf(address(this));
+        return IAccruedLPToken(alpToken).withdrawableYieldOf(address(this));
     }
 
     /**
      * @return address of LP Token
      */
     function getPrincipalAddress() external view override returns (address) {
-        return slpToken;
+        return alpToken;
     }
 
     /**
@@ -141,10 +141,10 @@ contract SousChef is Initializable, ReentrancyGuard, ISousChef {
      * @notice This function should withdraw principal from the underlying strategy.
      */
     function withdrawPrincipal(uint256 _amount) external override onlyAuthorised {
-        address _slpToken = slpToken;
-        IStakedLPToken(_slpToken).checkpoint();
+        address _alpToken = alpToken;
+        IAccruedLPToken(_alpToken).checkpoint();
 
-        IERC20(_slpToken).safeTransfer(msg.sender, _amount);
+        IERC20(_alpToken).safeTransfer(msg.sender, _amount);
         _balancePrincipal -= _amount;
     }
 
@@ -162,10 +162,10 @@ contract SousChef is Initializable, ReentrancyGuard, ISousChef {
 
         IFlashFToken(fToken).burnFrom(msg.sender, _amount);
 
-        address _slpToken = slpToken;
-        IStakedLPToken(_slpToken).unstake(yield, address(this));
+        address _alpToken = alpToken;
+        IAccruedLPToken(_alpToken).unstake(yield, address(this));
 
-        address lpToken = IStakedLPToken(_slpToken).lpToken();
+        address lpToken = IAccruedLPToken(_alpToken).lpToken();
         uint256 balanceLPToken = IERC20(lpToken).balanceOf(address(this));
         _transfer(lpToken, _yieldTo, balanceLPToken);
 
