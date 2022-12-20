@@ -20,10 +20,6 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    error InvalidPath();
-    error InsufficientYield();
-    error InsufficientAmount();
-
     uint128 internal constant POINTS_MULTIPLIER = type(uint128).max;
 
     address public override factory;

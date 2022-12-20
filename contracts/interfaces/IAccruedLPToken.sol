@@ -5,6 +5,10 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IAccruedLPToken is IERC20 {
+    error InvalidPath();
+    error InsufficientYield();
+    error InsufficientAmount();
+
     event Stake(uint256 shares, uint256 amountLP, address indexed beneficiary);
     event Unstake(uint256 shares, uint256 amountLP, address indexed beneficiary);
     event WithdrawSushi(uint256 shares, uint256 yield, address indexed beneficiary);

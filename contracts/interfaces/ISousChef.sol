@@ -5,6 +5,13 @@ pragma solidity ^0.8.0;
 import "./IFlashStrategy.sol";
 
 interface ISousChef is IFlashStrategy {
+    error Forbidden();
+    error InvalidFlashProtocol();
+    error InvalidVault();
+    error AmountTooLow();
+    error InsufficientYield();
+    error InsufficientTotalSupply();
+
     function factory() external view returns (address);
 
     function flashProtocol() external view returns (address);

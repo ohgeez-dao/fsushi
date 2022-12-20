@@ -16,13 +16,6 @@ import "./interfaces/IFeeVault.sol";
 contract SousChef is Initializable, ReentrancyGuard, ISousChef {
     using SafeERC20 for IERC20;
 
-    error Forbidden();
-    error InvalidFlashProtocol();
-    error InvalidVault();
-    error AmountTooLow();
-    error InsufficientYield();
-    error InsufficientTotalSupply();
-
     address public override factory;
 
     /**
