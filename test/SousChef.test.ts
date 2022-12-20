@@ -150,7 +150,7 @@ const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
         carol,
         tokens,
         sushi,
-        slpStrategy: slpVault,
+        slpVault,
         slpFactory,
         flashFactory,
         flashNFT,

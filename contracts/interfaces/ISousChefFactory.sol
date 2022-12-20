@@ -5,7 +5,7 @@ pragma solidity ^0.8.0;
 interface ISousChefFactory {
     error InvalidFee();
     error InvalidFeeRecipient();
-    error AlreadyCreated();
+    error SousChefCreated();
 
     event UpdateStakeFeeBPS(uint256 fee);
     event UpdateFlashStakeFeeBPS(uint256 fee);

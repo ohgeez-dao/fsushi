@@ -82,7 +82,7 @@ contract SousChefFactory is Ownable, ISousChefFactory {
     }
 
     function createSousChef(uint256 pid) external override returns (address chef) {
-        if (getSousChef[pid] != address(0)) revert AlreadyCreated();
+        if (getSousChef[pid] != address(0)) revert SousChefCreated();
 
         chef = Clones.cloneDeterministic(_implementation, bytes32(pid));
         SousChef(chef).initialize(flashProtocol, slpTokenFactory, pid);

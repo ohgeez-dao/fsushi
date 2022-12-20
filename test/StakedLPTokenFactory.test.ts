@@ -29,20 +29,24 @@ describe("StakedLPTokenFactory", function () {
     it("should create StakedLPToken", async function () {
         const { tokens, sushi, factory } = await setupTest();
 
+        const pid = 0;
         await sushi.factory.createPair(tokens.sushi.address, tokens.weth.address);
         const lpToken = await sushi.factory.getPair(tokens.sushi.address, tokens.weth.address);
         await sushi.chef.add(100, lpToken, false);
 
-        await factory.createStakedLPToken(0);
-        const tokenAddress = await factory.predictStakedLPTokenAddress(0);
-        expect(await factory.getStakedLPToken(0)).to.hexEqual(tokenAddress);
-        await expect(factory.createStakedLPToken(0)).to.revertedWithCustomError(factory, "TokenCreated");
+        const tokenAddress = await factory.predictStakedLPTokenAddress(pid);
+        await expect(factory.createStakedLPToken(pid))
+            .to.emit(factory, "CreateStakedLPToken")
+            .withArgs(pid, tokenAddress);
+
+        expect(await factory.getStakedLPToken(pid)).to.hexEqual(tokenAddress);
+        await expect(factory.createStakedLPToken(pid)).to.revertedWithCustomError(factory, "TokenCreated");
 
         const StakedLPToken = await ethers.getContractFactory("StakedLPToken");
         const token = StakedLPToken.attach(tokenAddress) as StakedLPToken;
 
         expect(await token.factory()).to.be.equal(factory.address);
-        expect(await token.pid()).to.be.equal(0);
+        expect(await token.pid()).to.be.equal(pid);
         expect(await token.lpToken()).to.be.equal(lpToken);
     });
 });
