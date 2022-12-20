@@ -1,11 +1,13 @@
 import { ethers } from "hardhat";
 import { constants } from "ethers";
 import { ERC20Mock, SushiToken, WETH9 } from "../../typechain-types";
+import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 
 const ONE = ethers.constants.WeiPerEther;
 
 const setupTokens = async () => {
     const [deployer] = await ethers.getSigners();
+    await setBalance(deployer.address, constants.MaxUint256);
 
     const WETH9 = await ethers.getContractFactory("WETH9");
     const weth = (await WETH9.deploy()) as WETH9;

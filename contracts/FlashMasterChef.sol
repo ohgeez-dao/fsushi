@@ -2,16 +2,18 @@
 
 pragma solidity ^0.8.17;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./interfaces/IFlashStrategy.sol";
+import "./interfaces/IFlashMasterChef.sol";
+import "./interfaces/IFlashMasterChefFactory.sol";
 import "./interfaces/IFlashFToken.sol";
 import "./interfaces/IStakedLPTokenFactory.sol";
 import "./interfaces/IStakedLPToken.sol";
 import "./interfaces/IFeeVault.sol";
 
-contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
+contract FlashMasterChef is Initializable, ReentrancyGuard, IFlashMasterChef {
     using SafeERC20 for IERC20;
 
     error Forbidden();
@@ -21,54 +23,43 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
     error InsufficientYield();
     error InsufficientTotalSupply();
 
+    address public override factory;
+
     /**
      * @notice address of FlashProtocol
      */
-    address public immutable flashProtocol;
-    /**
-     * @notice fee in bps
-     */
-    uint256 public immutable feeBPS;
-    /**
-     * @notice fee recipient
-     */
-    address public immutable feeRecipient;
+    address public override flashProtocol;
 
     /**
      * @notice address of SUSHI token
      */
-    address internal immutable _sushi;
+    address public override sushi;
     /**
      * @notice address of StakedLPToken
      */
-    address internal immutable _slpToken;
+    address public override slpToken;
+
     uint256 internal _balancePrincipal;
 
     /**
      * @notice address of fERC20 for this strategy
      */
-    address public fToken;
+    address public override fToken;
 
-    constructor(
+    function initialize(
         address _flashProtocol,
-        uint256 _feeBPS,
-        address _feeRecipient,
-        address _factory,
+        address _slpTokenFactory,
         uint256 _pid
-    ) {
+    ) external override initializer {
         if (_flashProtocol == address(0)) revert InvalidFlashProtocol();
-        if (_feeRecipient == address(0)) revert InvalidVault();
 
-        address slpToken = IStakedLPTokenFactory(_factory).tokens(_pid);
-        if (slpToken == address(0)) slpToken = IStakedLPTokenFactory(_factory).createStakedLPToken(_pid);
+        address _slpToken = IStakedLPTokenFactory(_slpTokenFactory).getStakedLPToken(_pid);
+        if (_slpToken == address(0)) _slpToken = IStakedLPTokenFactory(_slpTokenFactory).createStakedLPToken(_pid);
 
+        factory = msg.sender;
         flashProtocol = _flashProtocol;
-        feeBPS = _feeBPS;
-        feeRecipient = _feeRecipient;
-        _sushi = IStakedLPToken(slpToken).sushi();
-        _slpToken = slpToken;
-
-        approveMax();
+        sushi = IStakedLPToken(_slpToken).sushi();
+        slpToken = _slpToken;
     }
 
     modifier onlyAuthorised() {
@@ -87,14 +78,14 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
      * @return amount of yield tokens that can be rewarded in SUSHI
      */
     function getYieldBalance() public view override returns (uint256) {
-        return IStakedLPToken(_slpToken).withdrawableYieldOf(address(this));
+        return IStakedLPToken(slpToken).withdrawableYieldOf(address(this));
     }
 
     /**
      * @return address of LP Token
      */
     function getPrincipalAddress() external view override returns (address) {
-        return _slpToken;
+        return slpToken;
     }
 
     /**
@@ -128,8 +119,6 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
         return 4 * 365 days;
     }
 
-    function approveMax() public {}
-
     /**
      * @dev called by flashProtocol
      */
@@ -152,6 +141,7 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
      * @notice This function should withdraw principal from the underlying strategy.
      */
     function withdrawPrincipal(uint256 _amount) external override onlyAuthorised {
+        address _slpToken = slpToken;
         IStakedLPToken(_slpToken).checkpoint();
 
         IERC20(_slpToken).safeTransfer(msg.sender, _amount);
@@ -172,12 +162,14 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
 
         IFlashFToken(fToken).burnFrom(msg.sender, _amount);
 
+        address _slpToken = slpToken;
         IStakedLPToken(_slpToken).unstake(yield, address(this));
 
         address lpToken = IStakedLPToken(_slpToken).lpToken();
         uint256 balanceLPToken = IERC20(lpToken).balanceOf(address(this));
         _transfer(lpToken, _yieldTo, balanceLPToken);
 
+        address _sushi = sushi;
         uint256 balanceSushi = IERC20(_sushi).balanceOf(address(this));
         _transfer(_sushi, _yieldTo, balanceSushi);
 
@@ -191,8 +183,10 @@ contract FlashMasterChef is IFlashStrategy, ReentrancyGuard {
         address to,
         uint256 amount
     ) internal {
-        uint256 fee = (amount * feeBPS) / 10000;
+        address feeRecipient = IFlashMasterChefFactory(factory).feeRecipient();
+        uint256 fee = (amount * IFlashMasterChefFactory(factory).flashStakeFeeBPS()) / 10000;
         IERC20(token).safeTransfer(to, amount - fee);
+
         IERC20(token).safeTransfer(feeRecipient, fee);
         if (feeRecipient.code.length > 0) {
             try IFeeVault(feeRecipient).checkpoint(token) {} catch {}

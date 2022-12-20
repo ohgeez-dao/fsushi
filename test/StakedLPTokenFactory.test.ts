@@ -35,7 +35,7 @@ describe("StakedLPTokenFactory", function () {
 
         await factory.createStakedLPToken(0);
         const tokenAddress = await factory.predictStakedLPTokenAddress(0);
-        expect(await factory.tokens(0)).to.hexEqual(tokenAddress);
+        expect(await factory.getStakedLPToken(0)).to.hexEqual(tokenAddress);
         await expect(factory.createStakedLPToken(0)).to.revertedWithCustomError(factory, "TokenCreated");
 
         const StakedLPToken = await ethers.getContractFactory("StakedLPToken");

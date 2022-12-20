@@ -8,15 +8,12 @@ import "./interfaces/IStakedLPTokenFactory.sol";
 import "./StakedLPToken.sol";
 
 contract StakedLPTokenFactory is Ownable, IStakedLPTokenFactory {
-    error InvalidAddress();
-    error TokenCreated();
-
     address public immutable override router;
     address public immutable override masterChef;
     address internal immutable _implementation;
 
     address public override yieldVault;
-    mapping(uint256 => address) public override tokens;
+    mapping(uint256 => address) public override getStakedLPToken;
 
     constructor(
         address _router,
@@ -42,12 +39,12 @@ contract StakedLPTokenFactory is Ownable, IStakedLPTokenFactory {
     }
 
     function createStakedLPToken(uint256 pid) external override returns (address token) {
-        if (tokens[pid] != address(0)) revert TokenCreated();
+        if (getStakedLPToken[pid] != address(0)) revert TokenCreated();
 
         token = Clones.cloneDeterministic(_implementation, bytes32(pid));
         StakedLPToken(token).initialize(router, masterChef, pid);
 
-        tokens[pid] = token;
+        getStakedLPToken[pid] = token;
 
         emit CreateStakedLPToken(pid, token);
     }
