@@ -6,14 +6,14 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/IFlashMasterChef.sol";
-import "./interfaces/IFlashMasterChefFactory.sol";
+import "./interfaces/ISousChef.sol";
+import "./interfaces/ISousChefFactory.sol";
 import "./interfaces/IFlashFToken.sol";
 import "./interfaces/IStakedLPTokenFactory.sol";
 import "./interfaces/IStakedLPToken.sol";
 import "./interfaces/IFeeVault.sol";
 
-contract FlashMasterChef is Initializable, ReentrancyGuard, IFlashMasterChef {
+contract SousChef is Initializable, ReentrancyGuard, ISousChef {
     using SafeERC20 for IERC20;
 
     error Forbidden();
@@ -183,8 +183,8 @@ contract FlashMasterChef is Initializable, ReentrancyGuard, IFlashMasterChef {
         address to,
         uint256 amount
     ) internal {
-        address feeRecipient = IFlashMasterChefFactory(factory).feeRecipient();
-        uint256 fee = (amount * IFlashMasterChefFactory(factory).flashStakeFeeBPS()) / 10000;
+        address feeRecipient = ISousChefFactory(factory).feeRecipient();
+        uint256 fee = (amount * ISousChefFactory(factory).flashStakeFeeBPS()) / 10000;
         IERC20(token).safeTransfer(to, amount - fee);
 
         IERC20(token).safeTransfer(feeRecipient, fee);

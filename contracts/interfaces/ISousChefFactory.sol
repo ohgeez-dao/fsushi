@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IFlashMasterChefFactory {
+interface ISousChefFactory {
     error InvalidFee();
     error InvalidFeeRecipient();
     error AlreadyCreated();
@@ -10,7 +10,7 @@ interface IFlashMasterChefFactory {
     event UpdateStakeFeeBPS(uint256 fee);
     event UpdateFlashStakeFeeBPS(uint256 fee);
     event UpdateFeeRecipient(address feeRecipient);
-    event CreateFlashMasterChef(uint256 pid, address chef);
+    event CreateSousChef(uint256 pid, address chef);
 
     function flashProtocol() external view returns (address);
 
@@ -22,9 +22,9 @@ interface IFlashMasterChefFactory {
 
     function feeRecipient() external view returns (address);
 
-    function getFlashMasterChef(uint256 pid) external view returns (address);
+    function getSousChef(uint256 pid) external view returns (address);
 
-    function predictFlashMasterChefAddress(uint256 pid) external view returns (address token);
+    function predictSousChefAddress(uint256 pid) external view returns (address token);
 
     function updateStakeFeeBPS(uint256 fee) external;
 
@@ -32,5 +32,5 @@ interface IFlashMasterChefFactory {
 
     function updateFeeRecipient(address _feeRecipient) external;
 
-    function createFlashMasterChef(uint256 pid) external returns (address token);
+    function createSousChef(uint256 pid) external returns (address token);
 }

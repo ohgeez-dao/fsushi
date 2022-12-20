@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "./IFlashStrategy.sol";
 
-interface IFlashMasterChef is IFlashStrategy {
+interface ISousChef is IFlashStrategy {
     function factory() external view returns (address);
 
     function flashProtocol() external view returns (address);

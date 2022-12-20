@@ -4,10 +4,10 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/IFlashMasterChefFactory.sol";
-import "./FlashMasterChef.sol";
+import "./interfaces/ISousChefFactory.sol";
+import "./SousChef.sol";
 
-contract FlashMasterChefFactory is Ownable, IFlashMasterChefFactory {
+contract SousChefFactory is Ownable, ISousChefFactory {
     uint256 public constant MAX_FEE = 100; // 1%
 
     /**
@@ -34,7 +34,7 @@ contract FlashMasterChefFactory is Ownable, IFlashMasterChefFactory {
      */
     address public override feeRecipient;
 
-    mapping(uint256 => address) public override getFlashMasterChef;
+    mapping(uint256 => address) public override getSousChef;
 
     constructor(
         address _flashProtocol,
@@ -49,11 +49,11 @@ contract FlashMasterChefFactory is Ownable, IFlashMasterChefFactory {
         updateFlashStakeFeeBPS(_flashStakeFeeBPS);
         updateFeeRecipient(_feeRecipient);
 
-        FlashMasterChef chef = new FlashMasterChef();
+        SousChef chef = new SousChef();
         _implementation = address(chef);
     }
 
-    function predictFlashMasterChefAddress(uint256 pid) external view override returns (address token) {
+    function predictSousChefAddress(uint256 pid) external view override returns (address token) {
         token = Clones.predictDeterministicAddress(_implementation, bytes32(pid));
     }
 
@@ -81,14 +81,14 @@ contract FlashMasterChefFactory is Ownable, IFlashMasterChefFactory {
         emit UpdateFeeRecipient(_feeRecipient);
     }
 
-    function createFlashMasterChef(uint256 pid) external override returns (address chef) {
-        if (getFlashMasterChef[pid] != address(0)) revert AlreadyCreated();
+    function createSousChef(uint256 pid) external override returns (address chef) {
+        if (getSousChef[pid] != address(0)) revert AlreadyCreated();
 
         chef = Clones.cloneDeterministic(_implementation, bytes32(pid));
-        FlashMasterChef(chef).initialize(flashProtocol, slpTokenFactory, pid);
+        SousChef(chef).initialize(flashProtocol, slpTokenFactory, pid);
 
-        getFlashMasterChef[pid] = chef;
+        getSousChef[pid] = chef;
 
-        emit CreateFlashMasterChef(pid, chef);
+        emit CreateSousChef(pid, chef);
     }
 }

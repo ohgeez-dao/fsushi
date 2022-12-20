@@ -10,8 +10,8 @@ import {
     FlashFToken__factory,
     UniswapV2Pair__factory,
     SushiBarVault,
-    FlashMasterChefFactory,
-    FlashMasterChef__factory,
+    SousChefFactory,
+    SousChef__factory,
     FeeVault,
 } from "../typechain-types";
 import setupSushiswap, { SUSHI_PER_BLOCK } from "./utils/setupSushiswap";
@@ -48,36 +48,36 @@ const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
     const flashProtocol = (await Protocol.deploy(flashNFT.address, flashFactory.address)) as FlashProtocol;
     await flashFactory.transferOwnership(flashProtocol.address);
 
-    const FlashMCFactory = await ethers.getContractFactory("FlashMasterChefFactory");
-    const flashMCFactory = (await FlashMCFactory.deploy(
+    const Factory = await ethers.getContractFactory("SousChefFactory");
+    const factory = (await Factory.deploy(
         flashProtocol.address,
         slpFactory.address,
         stakeFeeBPS,
         flashStakeFeeBPS,
         feeRecipient.address
-    )) as FlashMasterChefFactory;
+    )) as SousChefFactory;
 
-    const createFlashMasterChef = async (token0, token1, allocPoint) => {
+    const createSousChef = async (token0, token1, allocPoint) => {
         const { pid, lpToken } = await sushi.addPool(token0, token1, allocPoint);
-        await flashMCFactory.createFlashMasterChef(pid);
+        await factory.createSousChef(pid);
 
-        const flashMC = FlashMasterChef__factory.connect(await flashMCFactory.getFlashMasterChef(pid), ethers.provider);
-        const slpToken = StakedLPToken__factory.connect(await flashMC.slpToken(), ethers.provider);
+        const sousChef = SousChef__factory.connect(await factory.getSousChef(pid), ethers.provider);
+        const slpToken = StakedLPToken__factory.connect(await sousChef.slpToken(), ethers.provider);
 
         await flashProtocol.registerStrategy(
-            flashMC.address,
+            sousChef.address,
             slpToken.address,
-            "FlashMasterChef " + (await slpToken.name()),
+            "SousChef " + (await slpToken.name()),
             "f" + (await slpToken.symbol()) + "-" + slpToken.address.substring(2, 6)
         );
 
-        const fToken = FlashFToken__factory.connect(await flashMC.fToken(), ethers.provider);
+        const fToken = FlashFToken__factory.connect(await sousChef.fToken(), ethers.provider);
 
         return {
             pid,
             lpToken,
             slpToken,
-            flashMC,
+            sousChef,
             fToken,
         };
     };
@@ -156,19 +156,19 @@ const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
         flashNFT,
         flashProtocol,
         mintSLP,
-        createFlashMasterChef,
+        createSousChef,
     };
 };
 
-describe("FlashMasterChef", function () {
+describe("SousChef", function () {
     it("should stake for 1 account", async function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
-        const { alice, tokens, flashProtocol, createFlashMasterChef, mintSLP } = await setupTest(0, 0, feeVault);
+        const { alice, tokens, flashProtocol, createSousChef, mintSLP } = await setupTest(0, 0, feeVault);
 
-        // add SUSHI-WETH pool, slpToken and flashMC
-        const { flashMC, slpToken, fToken } = await createFlashMasterChef(tokens.sushi, tokens.weth, 100);
+        // add SUSHI-WETH pool, slpToken and sousChef
+        const { sousChef, slpToken, fToken } = await createSousChef(tokens.sushi, tokens.weth, 100);
 
         const amount = ONE.mul(100);
         const amountLP = await mintSLP(alice, slpToken, amount);
@@ -180,9 +180,9 @@ describe("FlashMasterChef", function () {
 
         // stake all SLP (staked LP amount + 200 pending SUSHI)
         const amountSLP = amountLP.add(SUSHI_PER_BLOCK.mul(2));
-        await flashProtocol.connect(alice).stake(flashMC.address, amountSLP, YEAR, alice.address, false);
+        await flashProtocol.connect(alice).stake(sousChef.address, amountSLP, YEAR, alice.address, false);
         expect(await slpToken.balanceOf(alice.address)).to.be.equal(0);
-        expect(await slpToken.balanceOf(flashMC.address)).to.be.approximately(amountSLP, DELTA);
+        expect(await slpToken.balanceOf(sousChef.address)).to.be.approximately(amountSLP, DELTA);
         expect(await fToken.balanceOf(alice.address)).to.be.approximately(amountSLP, DELTA);
     });
 });
