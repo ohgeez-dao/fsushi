@@ -7,14 +7,14 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./interfaces/IFSushiMinter.sol";
+import "./interfaces/ISousChef.sol";
 import "./interfaces/IFSushiLocker.sol";
 import "./interfaces/IFSushiController.sol";
 import "./interfaces/IFSushi.sol";
 import "./interfaces/IFlashStrategySushiSwapFactory.sol";
 import "./interfaces/IFlashStrategySushiSwap.sol";
 
-contract FSushiMinter is Ownable, IFSushiMinter {
+contract SousChef is Ownable, ISousChef {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
     using SafeCast for int256;

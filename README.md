@@ -13,14 +13,14 @@ You can deposit SushiSwap LP tokens and get the equivalent amount of `aLP` token
 A FlashStake strategy to enable `AccruedLPToken`s to be used as principal and stakers get instant, upfront _SUSHI_ yield.
 You can also stake without instant yield and in this case you get `fToken`s that are minted from FlashStake protocol.
 
-### FSushiMinter
+### SousChef
 
 By depositing your `fToken` you're eligible for receiving newly minted `fSUSHI` rewards. In the first week, 300,000 `fSUSHI`s will be distributed and in next week, only 1/10 of the circulating supply of the first week will be minted. And from the next week, only the amount of circulating supply of the last week will be minted.
 Thus, you can reduce inflation rate of your `fSUSHI` by locking up your assets to `FSushiLocker`.
 
 ### FSushi - _fSUSHI_
 
-A plain ERC20 token that only `FSushiMinter` can mint.
+A plain ERC20 token that only `SousChef` can mint.
 
 ### FSushiLocker - _xfSUSHI_
 
