@@ -26,7 +26,7 @@ contract SousChef is Ownable, ISousChef {
 
     uint256 public constant WEEK = 1 weeks;
     uint256 public constant BONUS_MULTIPLIER = 10;
-    uint256 public constant INITIAL_WEEK_TOKENS = BONUS_MULTIPLIER * 1e16 * WEEK; // 0.01 every second
+    uint256 public constant INITIAL_REWARDS_IN_WEEK = BONUS_MULTIPLIER * 30000e18;
 
     address public immutable fSushi;
     address public immutable flashStrategyFactory;
@@ -215,7 +215,7 @@ contract SousChef is Ownable, ISousChef {
 
     function _getRewardsInWeek(uint256 time) internal returns (uint256 rewards) {
         if (time == startTime) {
-            return INITIAL_WEEK_TOKENS;
+            return INITIAL_REWARDS_IN_WEEK;
         }
 
         rewards = rewardsInWeek[time];
