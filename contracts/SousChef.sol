@@ -24,54 +24,54 @@ contract SousChef is Ownable, ISousChef {
         uint256 timestamp;
     }
 
-    uint256 public constant WEEK = 1 weeks;
-    uint256 public constant BONUS_MULTIPLIER = 10;
-    uint256 public constant INITIAL_REWARDS_IN_WEEK = BONUS_MULTIPLIER * 30000e18;
+    uint256 public constant override WEEK = 1 weeks;
+    uint256 public constant override BONUS_MULTIPLIER = 10;
+    uint256 public constant override INITIAL_REWARDS_IN_WEEK = BONUS_MULTIPLIER * 30000e18;
 
-    address public immutable fSushi;
-    address public immutable flashStrategyFactory;
-    uint256 public immutable startTime;
+    address public immutable override fSushi;
+    address public immutable override flashStrategyFactory;
+    uint256 public immutable override startTime;
 
     /**
      * @notice address of IFSushiLocker
      */
-    address public locker;
+    address public override locker;
 
     /**
      * @notice address of IFSushiController
      */
-    address public controller;
+    address public override controller;
 
     /**
      * @notice how much rewards to be minted at the week
      */
-    mapping(uint256 => uint256) public rewardsInWeek; // time => amount
+    mapping(uint256 => uint256) public override rewardsInWeek; // time => amount
 
     /**
      * @notice how much rewards were allocated in total for account in pid
      */
-    mapping(uint256 => mapping(address => uint256)) public allocatedRewards; // pid => account => amount
+    mapping(uint256 => mapping(address => uint256)) public override allocatedRewards; // pid => account => amount
     /**
      * @notice how much rewards were claimed in total for account in pid
      */
-    mapping(uint256 => mapping(address => uint256)) public claimedRewards; // pid => account => amount
+    mapping(uint256 => mapping(address => uint256)) public override claimedRewards; // pid => account => amount
 
     /**
      * @notice new Checkpoint gets appended whenever any deposit/withdraw happens
      */
-    mapping(uint256 => Checkpoint[]) public checkpoints; // pid => checkpoints
+    mapping(uint256 => Checkpoint[]) public override checkpoints; // pid => checkpoints
     /**
      * @notice points = ∫A(t)dt, where A(t) is the amount staked at time t
      */
-    mapping(uint256 => mapping(uint256 => uint256)) public points; // pid => time => points
+    mapping(uint256 => mapping(uint256 => uint256)) public override points; // pid => time => points
     /**
      * @notice rewardsInWeek is guaranteed to be correct before this week
      */
-    mapping(uint256 => uint256) public lastCheckpoint; // pid => time
+    mapping(uint256 => uint256) public override lastCheckpoint; // pid => time
 
-    mapping(uint256 => mapping(address => Checkpoint[])) public userCheckpoints; // pid => account => checkpoints
-    mapping(uint256 => mapping(address => mapping(uint256 => uint256))) public userPoints; // pid => account => time => checkpoints
-    mapping(uint256 => mapping(address => uint256)) public userLastCheckpoint; // pid => account => time
+    mapping(uint256 => mapping(address => Checkpoint[])) public override userCheckpoints; // pid => account => checkpoints
+    mapping(uint256 => mapping(address => mapping(uint256 => uint256))) public override userPoints; // pid => account => time => checkpoints
+    mapping(uint256 => mapping(address => uint256)) public override userLastCheckpoint; // pid => account => time
 
     constructor(
         address _fSushi,
@@ -87,7 +87,15 @@ contract SousChef is Ownable, ISousChef {
         startTime = weekStart + WEEK;
     }
 
-    function updateFSushiLocker(address _fSushiLocker) external onlyOwner {
+    function checkpointsLength(uint256 pid) external view override returns (uint256) {
+        return checkpoints[pid].length;
+    }
+
+    function userCheckpointsLength(uint256 pid, address account) external view override returns (uint256) {
+        return userCheckpoints[pid][account].length;
+    }
+
+    function updateFSushiLocker(address _fSushiLocker) external override onlyOwner {
         if (_fSushiLocker == address(0)) revert InvalidFSushiLocker();
 
         locker = _fSushiLocker;
@@ -95,7 +103,7 @@ contract SousChef is Ownable, ISousChef {
         emit UpdateFSushiLocker(_fSushiLocker);
     }
 
-    function updateFSushiController(address _fSushiController) external onlyOwner {
+    function updateFSushiController(address _fSushiController) external override onlyOwner {
         if (_fSushiController == address(0)) revert InvalidFSushiController();
 
         controller = _fSushiController;
