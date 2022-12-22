@@ -31,6 +31,7 @@ A plain ERC20 token that only `SousChef` can mint.
 - [ ] Enable migration of LP tokens in AccruedLPToken
 - [ ] Add FSushiMaker
 - [ ] Add FSushiRoll
+- [ ] Implement pool weights in SousChef
 
 ## License
 
