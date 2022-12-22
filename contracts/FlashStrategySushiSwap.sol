@@ -6,14 +6,14 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/ISousChef.sol";
-import "./interfaces/ISousChefFactory.sol";
+import "./interfaces/IFlashStrategySushiSwap.sol";
+import "./interfaces/IFlashStrategySushiSwapFactory.sol";
 import "./interfaces/IFlashFToken.sol";
 import "./interfaces/IAccruedLPTokenFactory.sol";
 import "./interfaces/IAccruedLPToken.sol";
 import "./interfaces/IFeeVault.sol";
 
-contract SousChef is Initializable, ReentrancyGuard, ISousChef {
+contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrategySushiSwap {
     using SafeERC20 for IERC20;
 
     address public override factory;
@@ -176,8 +176,8 @@ contract SousChef is Initializable, ReentrancyGuard, ISousChef {
         address to,
         uint256 amount
     ) internal {
-        address feeRecipient = ISousChefFactory(factory).feeRecipient();
-        uint256 fee = (amount * ISousChefFactory(factory).flashStakeFeeBPS()) / 10000;
+        address feeRecipient = IFlashStrategySushiSwapFactory(factory).feeRecipient();
+        uint256 fee = (amount * IFlashStrategySushiSwapFactory(factory).flashStakeFeeBPS()) / 10000;
         IERC20(token).safeTransfer(to, amount - fee);
 
         IERC20(token).safeTransfer(feeRecipient, fee);

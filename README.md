@@ -8,7 +8,7 @@ fSUSHI is a protocol built on top of [FlashStake](http://flashstake.io/) and [Su
 
 You can deposit SushiSwap LP tokens and get the equivalent amount of `aLP` tokens. The difference from the original LP tokens is that the _SUSHI_ yield is automatically accrued to your `aLP` balance. Also, pending _SUSHI_ yield is being optimized by the dynamic strategies to get higher profits.
 
-### SousChef
+### FlashStrategySushiSwap
 
 A FlashStake strategy to enable `AccruedLPToken`s to be used as principal and stakers get instant, upfront _SUSHI_ yield.
 You can also stake without instant yield and in this case you get `fToken`s that are minted from FlashStake protocol.
@@ -29,6 +29,7 @@ A plain ERC20 token that only `FSushiMinter` can mint.
 ## TODO
 
 - [ ] Add FSushiLocker
+- [ ] Add FSushi
 - [ ] Enable migration of LP tokens in AccruedLPToken
 
 ## License

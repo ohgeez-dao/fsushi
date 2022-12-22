@@ -4,10 +4,10 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./interfaces/ISousChefFactory.sol";
-import "./SousChef.sol";
+import "./interfaces/IFlashStrategySushiSwapFactory.sol";
+import "./FlashStrategySushiSwap.sol";
 
-contract SousChefFactory is Ownable, ISousChefFactory {
+contract FlashStrategySushiSwapFactory is Ownable, IFlashStrategySushiSwapFactory {
     uint256 public constant MAX_FEE = 100; // 1%
 
     /**
@@ -34,7 +34,7 @@ contract SousChefFactory is Ownable, ISousChefFactory {
      */
     address public override feeRecipient;
 
-    mapping(uint256 => address) public override getSousChef;
+    mapping(uint256 => address) public override getFlashStrategySushiSwap;
 
     constructor(
         address _flashProtocol,
@@ -49,11 +49,11 @@ contract SousChefFactory is Ownable, ISousChefFactory {
         updateFlashStakeFeeBPS(_flashStakeFeeBPS);
         updateFeeRecipient(_feeRecipient);
 
-        SousChef chef = new SousChef();
-        _implementation = address(chef);
+        FlashStrategySushiSwap strategy = new FlashStrategySushiSwap();
+        _implementation = address(strategy);
     }
 
-    function predictSousChefAddress(uint256 pid) external view override returns (address token) {
+    function predictFlashStrategySushiSwapAddress(uint256 pid) external view override returns (address token) {
         token = Clones.predictDeterministicAddress(_implementation, bytes32(pid));
     }
 
@@ -81,14 +81,14 @@ contract SousChefFactory is Ownable, ISousChefFactory {
         emit UpdateFeeRecipient(_feeRecipient);
     }
 
-    function createSousChef(uint256 pid) external override returns (address chef) {
-        if (getSousChef[pid] != address(0)) revert SousChefCreated();
+    function createFlashStrategySushiSwap(uint256 pid) external override returns (address strategy) {
+        if (getFlashStrategySushiSwap[pid] != address(0)) revert FlashStrategySushiSwapCreated();
 
-        chef = Clones.cloneDeterministic(_implementation, bytes32(pid));
-        SousChef(chef).initialize(flashProtocol, alpTokenFactory, pid);
+        strategy = Clones.cloneDeterministic(_implementation, bytes32(pid));
+        FlashStrategySushiSwap(strategy).initialize(flashProtocol, alpTokenFactory, pid);
 
-        getSousChef[pid] = chef;
+        getFlashStrategySushiSwap[pid] = strategy;
 
-        emit CreateSousChef(pid, chef);
+        emit CreateFlashStrategySushiSwap(pid, strategy);
     }
 }

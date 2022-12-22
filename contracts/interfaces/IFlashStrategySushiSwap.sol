@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "./IFlashStrategy.sol";
 
-interface ISousChef is IFlashStrategy {
+interface IFlashStrategySushiSwap is IFlashStrategy {
     error Forbidden();
     error InvalidFlashProtocol();
     error InvalidVault();

@@ -2,15 +2,15 @@
 
 pragma solidity ^0.8.0;
 
-interface ISousChefFactory {
+interface IFlashStrategySushiSwapFactory {
     error InvalidFee();
     error InvalidFeeRecipient();
-    error SousChefCreated();
+    error FlashStrategySushiSwapCreated();
 
     event UpdateStakeFeeBPS(uint256 fee);
     event UpdateFlashStakeFeeBPS(uint256 fee);
     event UpdateFeeRecipient(address feeRecipient);
-    event CreateSousChef(uint256 pid, address chef);
+    event CreateFlashStrategySushiSwap(uint256 pid, address strategy);
 
     function flashProtocol() external view returns (address);
 
@@ -22,9 +22,9 @@ interface ISousChefFactory {
 
     function feeRecipient() external view returns (address);
 
-    function getSousChef(uint256 pid) external view returns (address);
+    function getFlashStrategySushiSwap(uint256 pid) external view returns (address);
 
-    function predictSousChefAddress(uint256 pid) external view returns (address token);
+    function predictFlashStrategySushiSwapAddress(uint256 pid) external view returns (address token);
 
     function updateStakeFeeBPS(uint256 fee) external;
 
@@ -32,5 +32,5 @@ interface ISousChefFactory {
 
     function updateFeeRecipient(address _feeRecipient) external;
 
-    function createSousChef(uint256 pid) external returns (address token);
+    function createFlashStrategySushiSwap(uint256 pid) external returns (address token);
 }

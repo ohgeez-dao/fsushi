@@ -11,8 +11,8 @@ import "./interfaces/IFSushiMinter.sol";
 import "./interfaces/IFSushiLocker.sol";
 import "./interfaces/IFSushiController.sol";
 import "./interfaces/IFSushi.sol";
-import "./interfaces/ISousChefFactory.sol";
-import "./interfaces/ISousChef.sol";
+import "./interfaces/IFlashStrategySushiSwapFactory.sol";
+import "./interfaces/IFlashStrategySushiSwap.sol";
 
 contract FSushiMinter is Ownable, IFSushiMinter {
     using SafeERC20 for IERC20;
@@ -29,7 +29,7 @@ contract FSushiMinter is Ownable, IFSushiMinter {
     uint256 public constant INITIAL_WEEK_TOKENS = BONUS_MULTIPLIER * 1e16 * WEEK; // 0.01 every second
 
     address public immutable fSushi;
-    address public immutable sousChefFactory;
+    address public immutable flashStrategyFactory;
     uint256 public immutable startTime;
 
     /**
@@ -77,12 +77,12 @@ contract FSushiMinter is Ownable, IFSushiMinter {
         address _fSushi,
         address _locker,
         address _controller,
-        address _sousChefFactory
+        address _flashStrategyFactory
     ) {
         fSushi = _fSushi;
         locker = _locker;
         controller = _controller;
-        sousChefFactory = _sousChefFactory;
+        flashStrategyFactory = _flashStrategyFactory;
         uint256 weekStart = _startOfWeek(block.timestamp);
         startTime = weekStart + WEEK;
     }
@@ -110,10 +110,10 @@ contract FSushiMinter is Ownable, IFSushiMinter {
     ) external override {
         if (block.timestamp < startTime) revert TooEarly();
 
-        address chef = ISousChefFactory(sousChefFactory).getSousChef(pid);
-        if (chef == address(0)) revert InvalidPid();
+        address strategy = IFlashStrategySushiSwapFactory(flashStrategyFactory).getFlashStrategySushiSwap(pid);
+        if (strategy == address(0)) revert InvalidPid();
 
-        address fToken = ISousChef(chef).fToken();
+        address fToken = IFlashStrategySushiSwap(strategy).fToken();
         IERC20(fToken).safeTransferFrom(msg.sender, address(this), amount);
 
         _update(checkpoints[pid], points[pid], amount.toInt256());
@@ -131,15 +131,15 @@ contract FSushiMinter is Ownable, IFSushiMinter {
         uint256 amount,
         address beneficiary
     ) external override {
-        address chef = ISousChefFactory(sousChefFactory).getSousChef(pid);
-        if (chef == address(0)) revert InvalidPid();
+        address strategy = IFlashStrategySushiSwapFactory(flashStrategyFactory).getFlashStrategySushiSwap(pid);
+        if (strategy == address(0)) revert InvalidPid();
 
         _update(checkpoints[pid], points[pid], -amount.toInt256());
         _update(userCheckpoints[pid][beneficiary], userPoints[pid][beneficiary], -amount.toInt256());
 
         userCheckpoint(pid, msg.sender);
 
-        address fToken = ISousChef(chef).fToken();
+        address fToken = IFlashStrategySushiSwap(strategy).fToken();
         IERC20(fToken).safeTransfer(beneficiary, amount);
     }
 

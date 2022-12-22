@@ -10,8 +10,8 @@ import {
     FlashFToken__factory,
     UniswapV2Pair__factory,
     SushiBarVault,
-    SousChefFactory,
-    SousChef__factory,
+    FlashStrategySushiSwapFactory,
+    FlashStrategySushiSwap__factory,
     FeeVault,
 } from "../typechain-types";
 import setupSushiswap, { SUSHI_PER_BLOCK } from "./utils/setupSushiswap";
@@ -48,26 +48,29 @@ const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
     const flashProtocol = (await Protocol.deploy(flashNFT.address, flashFactory.address)) as FlashProtocol;
     await flashFactory.transferOwnership(flashProtocol.address);
 
-    const Factory = await ethers.getContractFactory("SousChefFactory");
+    const Factory = await ethers.getContractFactory("FlashStrategySushiSwapFactory");
     const factory = (await Factory.deploy(
         flashProtocol.address,
         alpFactory.address,
         stakeFeeBPS,
         flashStakeFeeBPS,
         feeRecipient.address
-    )) as SousChefFactory;
+    )) as FlashStrategySushiSwapFactory;
 
-    const createSousChef = async (token0, token1, allocPoint) => {
+    const createFlashStrategySushiSwap = async (token0, token1, allocPoint) => {
         const { pid, lpToken } = await sushi.addPool(token0, token1, allocPoint);
-        await factory.createSousChef(pid);
+        await factory.createFlashStrategySushiSwap(pid);
 
-        const sousChef = SousChef__factory.connect(await factory.getSousChef(pid), ethers.provider);
+        const sousChef = FlashStrategySushiSwap__factory.connect(
+            await factory.getFlashStrategySushiSwap(pid),
+            ethers.provider
+        );
         const alpToken = AccruedLPToken__factory.connect(await sousChef.alpToken(), ethers.provider);
 
         await flashProtocol.registerStrategy(
             sousChef.address,
             alpToken.address,
-            "SousChef " + (await alpToken.name()),
+            "FlashStrategySushiSwap " + (await alpToken.name()),
             "f" + (await alpToken.symbol()) + "-" + alpToken.address.substring(2, 6)
         );
 
@@ -156,19 +159,19 @@ const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
         flashNFT,
         flashProtocol,
         mintSLP,
-        createSousChef,
+        createFlashStrategySushiSwap,
     };
 };
 
-describe("SousChef", function () {
+describe("FlashStrategySushiSwap", function () {
     it("should stake for 1 account", async function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
-        const { alice, tokens, flashProtocol, createSousChef, mintSLP } = await setupTest(0, 0, feeVault);
+        const { alice, tokens, flashProtocol, createFlashStrategySushiSwap, mintSLP } = await setupTest(0, 0, feeVault);
 
         // add SUSHI-WETH pool, alpToken and sousChef
-        const { sousChef, alpToken, fToken } = await createSousChef(tokens.sushi, tokens.weth, 100);
+        const { sousChef, alpToken, fToken } = await createFlashStrategySushiSwap(tokens.sushi, tokens.weth, 100);
 
         const amount = ONE.mul(100);
         const amountLP = await mintSLP(alice, alpToken, amount);

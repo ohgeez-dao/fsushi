@@ -9,8 +9,8 @@ import {
     FlashNFT,
     FlashFToken__factory,
     SushiBarVault,
-    SousChefFactory,
-    SousChef__factory,
+    FlashStrategySushiSwapFactory,
+    FlashStrategySushiSwap__factory,
     FeeVault,
 } from "../typechain-types";
 import setupSushiswap from "./utils/setupSushiswap";
@@ -41,14 +41,14 @@ const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
     const flashProtocol = (await Protocol.deploy(flashNFT.address, flashFactory.address)) as FlashProtocol;
     await flashFactory.transferOwnership(flashProtocol.address);
 
-    const Factory = await ethers.getContractFactory("SousChefFactory");
+    const Factory = await ethers.getContractFactory("FlashStrategySushiSwapFactory");
     const factory = (await Factory.deploy(
         flashProtocol.address,
         alpFactory.address,
         stakeFeeBPS,
         flashStakeFeeBPS,
         feeRecipient.address
-    )) as SousChefFactory;
+    )) as FlashStrategySushiSwapFactory;
 
     return {
         deployer,
@@ -66,8 +66,8 @@ const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
     };
 };
 
-describe("SousChefFactory", function () {
-    it("should create SousChef when alpToken exists", async function () {
+describe("FlashStrategySushiSwapFactory", function () {
+    it("should create FlashStrategySushiSwap when alpToken exists", async function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
@@ -76,16 +76,22 @@ describe("SousChefFactory", function () {
         const { pid } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
         await alpFactory.createAccruedLPToken(pid);
 
-        const address = await factory.predictSousChefAddress(pid);
-        await expect(factory.createSousChef(pid)).to.emit(factory, "CreateSousChef");
+        const address = await factory.predictFlashStrategySushiSwapAddress(pid);
+        await expect(factory.createFlashStrategySushiSwap(pid)).to.emit(factory, "CreateFlashStrategySushiSwap");
 
-        const sousChef = SousChef__factory.connect(await factory.getSousChef(pid), ethers.provider);
+        const sousChef = FlashStrategySushiSwap__factory.connect(
+            await factory.getFlashStrategySushiSwap(pid),
+            ethers.provider
+        );
         expect(sousChef.address).to.be.equal(address);
 
-        await expect(factory.createSousChef(pid)).to.be.revertedWithCustomError(factory, "SousChefCreated");
+        await expect(factory.createFlashStrategySushiSwap(pid)).to.be.revertedWithCustomError(
+            factory,
+            "FlashStrategySushiSwapCreated"
+        );
 
         const alpToken = AccruedLPToken__factory.connect(await sousChef.alpToken(), ethers.provider);
-        const fTokenName = "SousChef " + (await alpToken.name());
+        const fTokenName = "FlashStrategySushiSwap " + (await alpToken.name());
         const fTokenSymbol = "f" + (await alpToken.symbol()) + "-" + alpToken.address.substring(2, 6);
         await expect(
             flashProtocol.registerStrategy(sousChef.address, alpToken.address, fTokenName, fTokenSymbol)
@@ -96,7 +102,7 @@ describe("SousChefFactory", function () {
         expect(await fToken.symbol()).to.be.equal(fTokenSymbol);
     });
 
-    it("should create SousChef when alpToken doesn't exist", async function () {
+    it("should create FlashStrategySushiSwap when alpToken doesn't exist", async function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
@@ -105,17 +111,23 @@ describe("SousChefFactory", function () {
         const { pid } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
         expect(await alpFactory.getAccruedLPToken(pid)).to.be.equal(constants.AddressZero);
 
-        const address = await factory.predictSousChefAddress(pid);
-        await expect(factory.createSousChef(pid)).to.emit(factory, "CreateSousChef");
+        const address = await factory.predictFlashStrategySushiSwapAddress(pid);
+        await expect(factory.createFlashStrategySushiSwap(pid)).to.emit(factory, "CreateFlashStrategySushiSwap");
 
-        const sousChef = SousChef__factory.connect(await factory.getSousChef(pid), ethers.provider);
+        const sousChef = FlashStrategySushiSwap__factory.connect(
+            await factory.getFlashStrategySushiSwap(pid),
+            ethers.provider
+        );
         expect(await alpFactory.getAccruedLPToken(pid)).to.be.equal(await sousChef.alpToken());
         expect(sousChef.address).to.be.equal(address);
 
-        await expect(factory.createSousChef(pid)).to.be.revertedWithCustomError(factory, "SousChefCreated");
+        await expect(factory.createFlashStrategySushiSwap(pid)).to.be.revertedWithCustomError(
+            factory,
+            "FlashStrategySushiSwapCreated"
+        );
 
         const alpToken = AccruedLPToken__factory.connect(await sousChef.alpToken(), ethers.provider);
-        const fTokenName = "SousChef " + (await alpToken.name());
+        const fTokenName = "FlashStrategySushiSwap " + (await alpToken.name());
         const fTokenSymbol = "f" + (await alpToken.symbol()) + "-" + alpToken.address.substring(2, 6);
         expect(
             await flashProtocol.registerStrategy(sousChef.address, alpToken.address, fTokenName, fTokenSymbol)
