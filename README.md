@@ -28,9 +28,9 @@ A plain ERC20 token that only `SousChef` can mint.
 
 ## TODO
 
-- [ ] Add FSushiLocker
-- [ ] Add FSushi
 - [ ] Enable migration of LP tokens in AccruedLPToken
+- [ ] Add FSushiMaker
+- [ ] Add FSushiRoll
 
 ## License
 

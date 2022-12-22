@@ -8,11 +8,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/ISousChef.sol";
-import "./interfaces/IFSushiLocker.sol";
+import "./interfaces/IFSushiVault.sol";
 import "./interfaces/IFSushiController.sol";
 import "./interfaces/IFSushi.sol";
 import "./interfaces/IFlashStrategySushiSwapFactory.sol";
 import "./interfaces/IFlashStrategySushiSwap.sol";
+import "./libraries/DateUtils.sol";
 
 contract SousChef is Ownable, ISousChef {
     using SafeERC20 for IERC20;
@@ -24,7 +25,6 @@ contract SousChef is Ownable, ISousChef {
         uint256 timestamp;
     }
 
-    uint256 public constant override WEEK = 1 weeks;
     uint256 public constant override BONUS_MULTIPLIER = 10;
     uint256 public constant override INITIAL_REWARDS_IN_WEEK = BONUS_MULTIPLIER * 30000e18;
 
@@ -33,9 +33,9 @@ contract SousChef is Ownable, ISousChef {
     uint256 public immutable override startTime;
 
     /**
-     * @notice address of IFSushiLocker
+     * @notice address of IFSushiVault
      */
-    address public override locker;
+    address public override vault;
 
     /**
      * @notice address of IFSushiController
@@ -75,16 +75,16 @@ contract SousChef is Ownable, ISousChef {
 
     constructor(
         address _fSushi,
-        address _locker,
+        address _vault,
         address _controller,
         address _flashStrategyFactory
     ) {
         fSushi = _fSushi;
-        locker = _locker;
+        vault = _vault;
         controller = _controller;
         flashStrategyFactory = _flashStrategyFactory;
-        uint256 weekStart = _startOfWeek(block.timestamp);
-        startTime = weekStart + WEEK;
+        uint256 weekStart = DateUtils.startOfWeek(block.timestamp);
+        startTime = weekStart + DateUtils.WEEK;
     }
 
     function checkpointsLength(uint256 pid) external view override returns (uint256) {
@@ -95,12 +95,12 @@ contract SousChef is Ownable, ISousChef {
         return userCheckpoints[pid][account].length;
     }
 
-    function updateFSushiLocker(address _fSushiLocker) external override onlyOwner {
-        if (_fSushiLocker == address(0)) revert InvalidFSushiLocker();
+    function updateFSushiVault(address _fSushiVault) external override onlyOwner {
+        if (_fSushiVault == address(0)) revert InvalidFSushiVault();
 
-        locker = _fSushiLocker;
+        vault = _fSushiVault;
 
-        emit UpdateFSushiLocker(_fSushiLocker);
+        emit UpdateFSushiVault(_fSushiVault);
     }
 
     function updateFSushiController(address _fSushiController) external override onlyOwner {
@@ -167,15 +167,15 @@ contract SousChef is Ownable, ISousChef {
         _checkpoints.push(newCheckpoint);
 
         uint256 time = last.timestamp;
-        uint256 weekStart = _startOfWeek(time);
+        uint256 weekStart = DateUtils.startOfWeek(time);
         for (uint256 i; i < 512; ) {
-            if (block.timestamp < weekStart + WEEK) {
+            if (block.timestamp < weekStart + DateUtils.WEEK) {
                 _points[weekStart] += last.amount * (block.timestamp - time);
                 break;
             }
-            _points[weekStart] += last.amount * (weekStart + WEEK - time);
+            _points[weekStart] += last.amount * (weekStart + DateUtils.WEEK - time);
 
-            time = weekStart + WEEK;
+            time = weekStart + DateUtils.WEEK;
             weekStart = time;
             unchecked {
                 ++i;
@@ -205,14 +205,15 @@ contract SousChef is Ownable, ISousChef {
         if (time == 0) {
             time = startTime;
         }
-        uint256 until = _startOfWeek(_getCheckpointAt(checkpoints[pid], -1).timestamp);
+        // exclusive
+        uint256 until = DateUtils.startOfWeek(_getCheckpointAt(checkpoints[pid], -1).timestamp);
         for (uint256 i; i < 512; ) {
             if (until <= time) {
                 break;
             }
             _getRewardsInWeek(time);
 
-            time += WEEK;
+            time += DateUtils.WEEK;
             unchecked {
                 ++i;
             }
@@ -228,9 +229,12 @@ contract SousChef is Ownable, ISousChef {
 
         rewards = rewardsInWeek[time];
         if (rewards == 0) {
-            rewards = IFSushiLocker(locker).circulatingSupply(time - WEEK);
-            // 10x bonus is given for 1 week
-            if (time == startTime + WEEK) {
+            address _vault = vault;
+            IFSushiVault(_vault).checkpoint();
+            // last week's circulating supply becomes the total rewards in this week
+            rewards = IFSushi(fSushi).totalSupplyAt(time) - IFSushiVault(_vault).totalAssetsAt(time);
+            // 10x bonus is given for week 1
+            if (time == startTime + DateUtils.WEEK) {
                 rewards /= BONUS_MULTIPLIER;
             }
             rewardsInWeek[time] = rewards;
@@ -244,9 +248,10 @@ contract SousChef is Ownable, ISousChef {
         if (time == 0) {
             time = startTime;
         }
+        // exclusive
         uint256 until = Math.min(
             _lastCheckpoint,
-            _startOfWeek(_getCheckpointAt(userCheckpoints[pid][account], -1).timestamp)
+            DateUtils.startOfWeek(_getCheckpointAt(userCheckpoints[pid][account], -1).timestamp)
         );
         uint256 rewards;
         for (uint256 i; i < 512; ) {
@@ -260,7 +265,7 @@ contract SousChef is Ownable, ISousChef {
                 points[pid][time] /
                 1e18;
 
-            time += WEEK;
+            time += DateUtils.WEEK;
             unchecked {
                 ++i;
             }
@@ -286,9 +291,5 @@ contract SousChef is Ownable, ISousChef {
         } else {
             return _checkpoints[_index];
         }
-    }
-
-    function _startOfWeek(uint256 timestamp) internal pure returns (uint256) {
-        return ((timestamp) / WEEK) * WEEK;
     }
 }

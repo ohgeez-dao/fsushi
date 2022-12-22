@@ -5,11 +5,11 @@ pragma solidity ^0.8.0;
 interface ISousChef {
     error TooEarly();
     error InvalidPid();
-    error InvalidFSushiLocker();
+    error InvalidFSushiVault();
     error InvalidFSushiController();
     error NoClaimableRewards();
 
-    event UpdateFSushiLocker(address indexed fSushiLocker);
+    event UpdateFSushiVault(address indexed fSushiVault);
     event UpdateFSushiController(address indexed fSushiController);
     event Deposit(uint256 indexed pid, uint256 amount, address indexed beneficiary);
     event AllocateRewards(
@@ -19,8 +19,6 @@ interface ISousChef {
         uint256 allocatedRewards
     );
     event ClaimRewards(uint256 indexed pid, address indexed account, uint256 lastCheckpoint, uint256 amount);
-
-    function WEEK() external view returns (uint256);
 
     function BONUS_MULTIPLIER() external view returns (uint256);
 
@@ -32,7 +30,7 @@ interface ISousChef {
 
     function startTime() external view returns (uint256);
 
-    function locker() external view returns (address);
+    function vault() external view returns (address);
 
     function controller() external view returns (address);
 
@@ -66,7 +64,7 @@ interface ISousChef {
 
     function userCheckpointsLength(uint256 pid, address account) external view returns (uint256);
 
-    function updateFSushiLocker(address _fSushiLocker) external;
+    function updateFSushiVault(address _fSushiVault) external;
 
     function updateFSushiController(address _fSushiController) external;
 
