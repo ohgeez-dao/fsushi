@@ -14,7 +14,7 @@ contract FSushi is Ownable, ERC20, IFSushi {
     uint256 public override lastCheckpoint;
 
     constructor() ERC20("Flash Sushi Token", "fSUSHI") {
-        uint256 nextWeek = DateUtils.startOfWeek(block.timestamp) + DateUtils.WEEK;
+        uint256 nextWeek = DateUtils.startOfWeek(block.timestamp) + WEEK;
         startTime = nextWeek;
         lastCheckpoint = nextWeek;
     }
@@ -31,7 +31,7 @@ contract FSushi is Ownable, ERC20, IFSushi {
     function checkpoint() public {
         uint256 _totalSupply = totalSupply();
 
-        uint256 time = lastCheckpoint + DateUtils.WEEK;
+        uint256 time = lastCheckpoint + WEEK;
         // inclusive
         uint256 until = DateUtils.startOfWeek(block.timestamp);
 
@@ -40,7 +40,7 @@ contract FSushi is Ownable, ERC20, IFSushi {
 
             totalSupplyAt[time] = _totalSupply;
 
-            time += DateUtils.WEEK;
+            time += WEEK;
             unchecked {
                 ++i;
             }

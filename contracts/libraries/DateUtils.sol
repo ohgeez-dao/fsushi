@@ -2,8 +2,16 @@
 
 pragma solidity ^0.8.17;
 
+uint256 constant WEEK = 1 weeks;
+
 library DateUtils {
-    uint256 internal constant WEEK = 1 weeks;
+    function toWeekNumber(uint256 timestamp) internal pure returns (uint256) {
+        return timestamp / WEEK;
+    }
+
+    function toTimestamp(uint256 weekNumber) internal pure returns (uint256) {
+        return weekNumber * WEEK;
+    }
 
     function startOfWeek(uint256 timestamp) internal pure returns (uint256) {
         return ((timestamp) / WEEK) * WEEK;

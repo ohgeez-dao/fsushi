@@ -12,29 +12,27 @@ interface ISousChef {
     event UpdateFSushiVault(address indexed fSushiVault);
     event UpdateFSushiController(address indexed fSushiController);
     event Deposit(uint256 indexed pid, uint256 amount, address indexed beneficiary);
-    event AllocateRewards(
-        uint256 indexed pid,
-        address indexed account,
-        uint256 lastCheckpoint,
-        uint256 allocatedRewards
-    );
-    event ClaimRewards(uint256 indexed pid, address indexed account, uint256 lastCheckpoint, uint256 amount);
+    event Withdraw(uint256 indexed pid, uint256 amount, address indexed beneficiary);
+    event Checkpoint(uint256 indexed pid, uint256 lastCheckpoint);
+    event UserCheckpoint(uint256 indexed pid, address indexed account, uint256 lastCheckpoint);
+    event AllocateRewards(uint256 indexed pid, address indexed account, uint256 allocatedRewards);
+    event ClaimRewards(uint256 indexed pid, address indexed account, address indexed beneficiary, uint256 amount);
 
     function BONUS_MULTIPLIER() external view returns (uint256);
 
-    function INITIAL_REWARDS_IN_WEEK() external view returns (uint256);
+    function REWARDS_FOR_INITIAL_WEEK() external view returns (uint256);
 
     function fSushi() external view returns (address);
 
     function flashStrategyFactory() external view returns (address);
 
-    function startTime() external view returns (uint256);
+    function startWeek() external view returns (uint256);
 
     function vault() external view returns (address);
 
     function controller() external view returns (address);
 
-    function rewardsInWeek(uint256 time) external view returns (uint256);
+    function weeklyRewards(uint256 time) external view returns (uint256);
 
     function allocatedRewards(uint256 pid, address account) external view returns (uint256);
 
@@ -80,9 +78,9 @@ interface ISousChef {
         address beneficiary
     ) external;
 
-    function claimRewards(uint256 pid) external;
+    function claimRewards(uint256 pid, address beneficiary) external;
 
-    function checkpoint(uint256 pid) external returns (uint256 _lastCheckpointTime);
+    function checkpoint(uint256 pid) external;
 
-    function userCheckpoint(uint256 pid, address account) external returns (uint256);
+    function userCheckpoint(uint256 pid, address account) external;
 }

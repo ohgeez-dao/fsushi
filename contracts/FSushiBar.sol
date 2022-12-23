@@ -12,14 +12,14 @@ contract FSushiBar is ERC4626, IFSushiBar {
         uint256 timestamp;
     }
 
-    uint256 public constant override MINIMUM_PERIOD = DateUtils.WEEK;
+    uint256 public constant override MINIMUM_PERIOD = WEEK;
     uint256 public immutable override startTime;
 
     mapping(uint256 => uint256) public override totalAssetsAt;
     uint256 public override lastCheckpoint;
 
     constructor(address fSushi) ERC4626(IERC20(fSushi)) ERC20("Flash SushiBar", "xfSUSHI") {
-        uint256 nextWeek = DateUtils.startOfWeek(block.timestamp) + DateUtils.WEEK;
+        uint256 nextWeek = DateUtils.startOfWeek(block.timestamp) + WEEK;
         startTime = nextWeek;
         lastCheckpoint = nextWeek;
     }
@@ -30,7 +30,7 @@ contract FSushiBar is ERC4626, IFSushiBar {
     function checkpoint() public override {
         uint256 _totalAssets = totalAssets();
 
-        uint256 time = lastCheckpoint + DateUtils.WEEK;
+        uint256 time = lastCheckpoint + WEEK;
         // inclusive
         uint256 until = DateUtils.startOfWeek(block.timestamp);
 
@@ -39,7 +39,7 @@ contract FSushiBar is ERC4626, IFSushiBar {
 
             totalAssetsAt[time] = _totalAssets;
 
-            time += DateUtils.WEEK;
+            time += WEEK;
             unchecked {
                 ++i;
             }
