@@ -95,6 +95,7 @@ contract SousChef is Ownable, ISousChef {
         uint256 week = block.timestamp.toWeekNumber() + 1;
         startWeek = week;
         _lastCheckpoint = week;
+        weeklyRewards[week] = REWARDS_FOR_INITIAL_WEEK;
     }
 
     function checkpointsLength(uint256 pid) external view override returns (uint256) {
@@ -193,26 +194,18 @@ contract SousChef is Ownable, ISousChef {
      * @dev if this function doesn't get called for 512 weeks (around 9.8 years) this contract breaks
      */
     function checkpoint(uint256 pid) public override {
-        uint256 from = _lastCheckpoint;
-        // exclusive last index
+        uint256 from = _lastCheckpoint + 1;
         uint256 until = block.timestamp.toWeekNumber();
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
-            if (until <= week) {
-                break;
-            }
-            uint256 rewards;
-            if (week == startWeek) {
-                rewards = REWARDS_FOR_INITIAL_WEEK;
-            } else {
-                address _vault = vault;
-                IFSushiVault(_vault).checkpoint();
-                // last week's circulating supply becomes the total rewards in this week
-                rewards = IFSushi(fSushi).totalSupplyAt(week) - IFSushiVault(_vault).totalAssetsAt(week);
-                // 10x bonus is given for the first week
-                if (week == startWeek + 1) {
-                    rewards /= BONUS_MULTIPLIER;
-                }
+            if (until < week) break;
+            // last week's circulating supply becomes the total rewards in this week
+            // (week is already greater than startWeek)
+            uint256 rewards = IFSushi(fSushi).checkpointedMaximumTotalSupplyDuring(week - 1) -
+                IFSushiVault(vault).checkpointedMinimumTotalAssetsDuring(week - 1);
+            // 10x bonus is given only for the first week
+            if (week == startWeek + 1) {
+                rewards /= BONUS_MULTIPLIER;
             }
             weeklyRewards[week] = rewards;
 

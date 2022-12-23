@@ -7,39 +7,56 @@ import "./interfaces/IFSushiBar.sol";
 import "./libraries/DateUtils.sol";
 
 contract FSushiBar is ERC4626, IFSushiBar {
+    using DateUtils for uint256;
+
     struct Checkpoint {
         uint256 amount;
         uint256 timestamp;
     }
 
-    uint256 public constant override MINIMUM_PERIOD = WEEK;
-    uint256 public immutable override startTime;
+    uint256 public immutable override startWeek;
 
-    mapping(uint256 => uint256) public override totalAssetsAt;
-    uint256 public override lastCheckpoint;
+    /**
+     * @return minimum number of staked total assets during the whole week
+     */
+    mapping(uint256 => uint256) public override minimumTotalAssetsDuring;
+    /**
+     * @notice minimumTotalAssetsDuring is guaranteed to be correct before this week
+     */
+    uint256 public override lastCheckpoint; // week
 
     constructor(address fSushi) ERC4626(IERC20(fSushi)) ERC20("Flash SushiBar", "xfSUSHI") {
-        uint256 nextWeek = DateUtils.startOfWeek(block.timestamp) + WEEK;
-        startTime = nextWeek;
+        uint256 nextWeek = block.timestamp.toWeekNumber() + 1;
+        startWeek = nextWeek;
         lastCheckpoint = nextWeek;
+    }
+
+    function checkpointedMinimumTotalAssetsDuring(uint256 week) external override returns (uint256) {
+        checkpoint();
+        return minimumTotalAssetsDuring[week];
     }
 
     /**
      * @dev if this function doesn't get called for 512 weeks (around 9.8 years) this contract breaks
      */
     function checkpoint() public override {
-        uint256 _totalAssets = totalAssets();
-
-        uint256 time = lastCheckpoint + WEEK;
-        // inclusive
-        uint256 until = DateUtils.startOfWeek(block.timestamp);
+        uint256 from = lastCheckpoint;
+        uint256 until = block.timestamp.toWeekNumber();
 
         for (uint256 i; i < 512; ) {
-            if (time > until) break;
+            uint256 week = from + i;
+            if (week == until) {
+                uint256 prev = minimumTotalAssetsDuring[week];
+                uint256 current = totalAssets();
+                if (prev == 0 || current < prev) {
+                    minimumTotalAssetsDuring[week] = current;
+                }
+                break;
+            }
+            if (startWeek < week) {
+                minimumTotalAssetsDuring[week] = minimumTotalAssetsDuring[week - 1];
+            }
 
-            totalAssetsAt[time] = _totalAssets;
-
-            time += WEEK;
             unchecked {
                 ++i;
             }
@@ -54,9 +71,9 @@ contract FSushiBar is ERC4626, IFSushiBar {
         uint256 assets,
         uint256 shares
     ) internal override {
-        checkpoint();
-
         super._deposit(caller, receiver, assets, shares);
+
+        checkpoint();
     }
 
     /**
@@ -69,8 +86,8 @@ contract FSushiBar is ERC4626, IFSushiBar {
         uint256 assets,
         uint256 shares
     ) internal override {
-        checkpoint();
-
         super._withdraw(caller, receiver, owner, assets, shares);
+
+        checkpoint();
     }
 }

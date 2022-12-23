@@ -8,39 +8,57 @@ import "./interfaces/IFSushi.sol";
 import "./libraries/DateUtils.sol";
 
 contract FSushi is Ownable, ERC20, IFSushi {
-    uint256 public immutable override startTime;
+    using DateUtils for uint256;
 
-    mapping(uint256 => uint256) public override totalSupplyAt;
+    uint256 public immutable override startWeek;
+
+    /**
+     * @return minimum number of minted total supply during the whole week
+     */
+    mapping(uint256 => uint256) public override maximumTotalSupplyDuring;
+    /**
+     * @notice maximumTotalSupplyDuring is guaranteed to be correct before this week
+     */
     uint256 public override lastCheckpoint;
 
     constructor() ERC20("Flash Sushi Token", "fSUSHI") {
-        uint256 nextWeek = DateUtils.startOfWeek(block.timestamp) + WEEK;
-        startTime = nextWeek;
+        uint256 nextWeek = block.timestamp.toWeekNumber() + 1;
+        startWeek = nextWeek;
         lastCheckpoint = nextWeek;
     }
 
     function mint(address to, uint256 amount) external onlyOwner {
-        checkpoint();
-
         _mint(to, amount);
+
+        checkpoint();
+    }
+
+    function checkpointedMaximumTotalSupplyDuring(uint256 week) external override returns (uint256) {
+        checkpoint();
+        return maximumTotalSupplyDuring[week];
     }
 
     /**
      * @dev if this function doesn't get called for 512 weeks (around 9.8 years) this contract breaks
      */
     function checkpoint() public {
-        uint256 _totalSupply = totalSupply();
-
-        uint256 time = lastCheckpoint + WEEK;
-        // inclusive
-        uint256 until = DateUtils.startOfWeek(block.timestamp);
+        uint256 from = lastCheckpoint;
+        uint256 until = block.timestamp.toWeekNumber();
 
         for (uint256 i; i < 512; ) {
-            if (time > until) break;
+            uint256 week = from + i;
+            if (week == until) {
+                uint256 prev = maximumTotalSupplyDuring[week];
+                uint256 current = totalSupply();
+                if (current > prev) {
+                    maximumTotalSupplyDuring[week] = current;
+                }
+                break;
+            }
+            if (startWeek < week) {
+                maximumTotalSupplyDuring[week] = maximumTotalSupplyDuring[week - 1];
+            }
 
-            totalSupplyAt[time] = _totalSupply;
-
-            time += WEEK;
             unchecked {
                 ++i;
             }
