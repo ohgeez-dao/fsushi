@@ -53,15 +53,6 @@ contract SousChef is Ownable, ISousChef {
     uint256 internal _lastCheckpoint; // week
 
     /**
-     * @notice how much rewards were allocated in total for account in pid
-     */
-    mapping(uint256 => mapping(address => uint256)) public override allocatedRewards; // pid => account => amount
-    /**
-     * @notice how much rewards were claimed in total for account in pid
-     */
-    mapping(uint256 => mapping(address => uint256)) public override claimedRewards; // pid => account => amount
-
-    /**
      * @notice new Checkpoint gets appended whenever any deposit/withdraw happens
      */
     mapping(uint256 => Checkpoint_[]) public override checkpoints; // pid => checkpoints
@@ -70,22 +61,26 @@ contract SousChef is Ownable, ISousChef {
      */
     mapping(uint256 => mapping(uint256 => uint256)) public override points; // pid => week => points
     /**
-     * @notice points of pid is guaranteed to be correct before this week
+     * @notice points of pid is guaranteed to be correct before this time's week start
      */
-    mapping(uint256 => uint256) public override lastCheckpoint; // pid => week
+    mapping(uint256 => uint256) public override lastCheckpoint; // pid => timestamp
 
     /**
      * @notice new Checkpoint gets appended whenever any deposit/withdraw happens from account
      */
     mapping(uint256 => mapping(address => Checkpoint_[])) public override userCheckpoints; // pid => account => checkpoints
     /**
-     * @notice points = ∫A(t)dt, where A(t) is the amount staked at time t
+     * @notice how much rewards were allocated in total for account in pid
      */
-    mapping(uint256 => mapping(address => mapping(uint256 => uint256))) public override userPoints; // pid => account => week => checkpoints
+    mapping(uint256 => mapping(address => uint256)) public override userAllocatedRewards; // pid => account => amount
     /**
-     * @notice userPoints and allocatedRewards of account is guaranteed to be correct before this week
+     * @notice allocatedRewards of account is guaranteed to be correct before this week
      */
     mapping(uint256 => mapping(address => uint256)) public override userLastCheckpoint; // pid => account => week
+    /**
+     * @notice how much rewards were claimed in total for account in pid
+     */
+    mapping(uint256 => mapping(address => uint256)) public override userClaimedRewards; // pid => account => amount
 
     constructor(
         address _fSushi,
@@ -183,11 +178,11 @@ contract SousChef is Ownable, ISousChef {
     function claimRewards(uint256 pid, address beneficiary) public override {
         userCheckpoint(pid, msg.sender);
 
-        uint256 allocated = allocatedRewards[pid][msg.sender];
-        uint256 rewards = allocated - claimedRewards[pid][msg.sender];
+        uint256 allocated = userAllocatedRewards[pid][msg.sender];
+        uint256 rewards = allocated - userClaimedRewards[pid][msg.sender];
         if (rewards == 0) revert NoClaimableRewards();
 
-        claimedRewards[pid][msg.sender] = allocated;
+        userClaimedRewards[pid][msg.sender] = allocated;
 
         IFSushi(fSushi).mint(beneficiary, rewards);
 
@@ -227,79 +222,99 @@ contract SousChef is Ownable, ISousChef {
         }
         _lastCheckpoint = until;
 
-        from = lastCheckpoint[pid];
-        if (from == 0) {
-            from = startWeek;
-        }
-        uint256 lastWeek = _updatePoints(checkpoints[pid], points[pid], from);
-        lastCheckpoint[pid] = lastWeek;
+        _updatePoints(pid);
 
-        emit Checkpoint(pid, lastWeek);
+        emit Checkpoint(pid, until);
+    }
+
+    function _updatePoints(uint256 pid) internal {
+        Checkpoint_[] storage _checkpoints = checkpoints[pid];
+        if (_checkpoints.length == 0) {
+            lastCheckpoint[pid] = block.timestamp;
+            return;
+        }
+
+        uint256 lastTime = lastCheckpoint[pid];
+        if (lastTime == block.timestamp) return;
+        if (_checkpoints.length == 0) {
+            lastTime = startWeek.toTimestamp();
+        }
+
+        uint256 from = lastTime.toWeekNumber();
+        Checkpoint_ memory last = _getCheckpointAt(_checkpoints, -1);
+        if (_checkpoints.length == 1) {
+            points[pid][from] += (block.timestamp - lastTime) * last.amount;
+            lastCheckpoint[pid] = block.timestamp;
+            return;
+        }
+
+        uint256 amount = _getCheckpointAt(_checkpoints, -2).amount;
+        for (uint256 i; i < 512; ) {
+            uint256 week = from + i;
+            uint256 weekStart = week.toTimestamp();
+            uint256 weekEnd = weekStart + WEEK;
+            if (block.timestamp <= weekStart) break;
+            if (block.timestamp < weekEnd) {
+                points[pid][week] += amount * (block.timestamp - Math.max(last.timestamp, weekStart));
+                break;
+            }
+            if (i == 0) {
+                points[pid][week] += amount * (weekEnd - lastTime);
+            } else {
+                points[pid][week] += amount * WEEK;
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        lastCheckpoint[pid] = block.timestamp;
     }
 
     function userCheckpoint(uint256 pid, address account) public override {
         checkpoint(pid);
 
+        Checkpoint_[] storage _checkpoints = userCheckpoints[pid][account];
+        if (_checkpoints.length == 0) return;
+
+        uint256 lastWeek = userLastCheckpoint[pid][account];
+        if (lastWeek == block.timestamp) return;
+        if (lastWeek == 0) {
+            lastWeek = startWeek.toTimestamp();
+        }
+
         uint256 rewards;
-        uint256 from = userLastCheckpoint[pid][account];
-        if (from == 0) {
-            from = startWeek;
-        }
-        _updatePoints(userCheckpoints[pid][account], userPoints[pid][account], from);
+        uint256 from = lastWeek.toWeekNumber();
         // exclusive last index
-        uint256 until = block.timestamp.toWeekNumber();
-        for (uint256 i; i < 512; ) {
-            uint256 week = from + i;
-            if (until <= week) break;
-
-            uint256 weight = IFSushiController(controller).relativeWeightAt(pid, week);
-            rewards += (weeklyRewards[week] * weight * userPoints[pid][account][week]) / points[pid][week] / 1e18;
-
-            unchecked {
-                ++i;
-            }
-        }
-        userLastCheckpoint[pid][account] = until;
-        emit UserCheckpoint(pid, account, until);
-
-        uint256 prev = allocatedRewards[pid][account];
-        allocatedRewards[pid][account] = prev + rewards;
-        emit AllocateRewards(pid, account, prev + rewards);
-    }
-
-    function _updatePoints(
-        Checkpoint_[] storage _checkpoints,
-        mapping(uint256 => uint256) storage _points,
-        uint256 from
-    ) internal returns (uint256 _lastWeek) {
-        if (_checkpoints.length < 2) return 0;
-
-        uint256 amount = _getCheckpointAt(_checkpoints, -2).amount;
+        uint256 to = block.timestamp.toWeekNumber();
         Checkpoint_ memory last = _getCheckpointAt(_checkpoints, -1);
-
-        // exclusive last index
-        uint256 until = block.timestamp.toWeekNumber();
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
-            if (until <= week) break;
-
-            uint256 weekStart = week.toTimestamp();
-            if (block.timestamp < weekStart + WEEK) {
-                _points[week] += amount * (block.timestamp - Math.max(last.timestamp, weekStart));
-                break;
-            }
+            if (to <= week) break;
+            uint256 userPoints;
             if (i == 0) {
-                _points[week] += amount * (weekStart + WEEK - last.timestamp);
+                userPoints = last.amount * ((week + 1).toTimestamp() - last.timestamp);
+                if (_checkpoints.length >= 2) {
+                    userPoints += _getCheckpointAt(_checkpoints, -2).amount * (last.timestamp - week.toTimestamp());
+                }
             } else {
-                _points[week] += amount * WEEK;
+                userPoints = last.amount * WEEK;
             }
+            uint256 weight = IFSushiController(controller).relativeWeightAt(pid, week);
+            rewards += (weeklyRewards[week] * weight * userPoints) / points[pid][week] / 1e18;
 
             unchecked {
                 ++i;
             }
         }
 
-        return until;
+        userLastCheckpoint[pid][account] = to;
+        emit UserCheckpoint(pid, account, to);
+
+        uint256 prev = userAllocatedRewards[pid][account];
+        userAllocatedRewards[pid][account] = prev + rewards;
+        emit AllocateRewards(pid, account, prev + rewards);
     }
 
     function _getCheckpointAt(Checkpoint_[] storage _checkpoints, int256 index)

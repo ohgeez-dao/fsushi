@@ -34,10 +34,6 @@ interface ISousChef {
 
     function weeklyRewards(uint256 time) external view returns (uint256);
 
-    function allocatedRewards(uint256 pid, address account) external view returns (uint256);
-
-    function claimedRewards(uint256 pid, address account) external view returns (uint256);
-
     function checkpoints(uint256 pid, uint256 index) external view returns (uint256 amount, uint256 timestamp);
 
     function checkpointsLength(uint256 pid) external view returns (uint256);
@@ -52,13 +48,11 @@ interface ISousChef {
         uint256 index
     ) external view returns (uint256 amount, uint256 timestamp);
 
-    function userPoints(
-        uint256 pid,
-        address account,
-        uint256 time
-    ) external view returns (uint256);
+    function userAllocatedRewards(uint256 pid, address account) external view returns (uint256);
 
     function userLastCheckpoint(uint256 pid, address account) external view returns (uint256 time);
+
+    function userClaimedRewards(uint256 pid, address account) external view returns (uint256);
 
     function userCheckpointsLength(uint256 pid, address account) external view returns (uint256);
 
