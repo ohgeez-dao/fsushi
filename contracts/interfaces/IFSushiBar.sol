@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import "./IFSushiVault.sol";
 
 interface IFSushiBar is IERC4626, IFSushiVault {
+    error TooEarly();
+
     function depositSigned(
         uint256 assets,
         address receiver,

@@ -10,14 +10,17 @@ import "./libraries/DateUtils.sol";
 contract FSushiBar is ERC4626, IFSushiBar {
     using DateUtils for uint256;
 
-    struct Checkpoint {
-        uint256 amount;
-        uint256 timestamp;
-    }
+    uint256 internal constant MINIMUM_PERIOD = 1 weeks;
 
     uint256 public immutable override startWeek;
 
     /**
+     * @notice timestamp when users lastly deposited
+     */
+    mapping(address => uint256) public override lastDeposit; // timestamp
+
+    /**
+     * @dev this is guaranteed to be correct up until the last week
      * @return minimum number of staked total assets during the whole week
      */
     mapping(uint256 => uint256) public override lockedTotalBalanceDuring;
@@ -43,20 +46,13 @@ contract FSushiBar is ERC4626, IFSushiBar {
     function checkpoint() public override {
         uint256 from = lastCheckpoint;
         uint256 until = block.timestamp.toWeekNumber();
+        if (from == until) return;
 
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
-            if (week == until) {
-                uint256 prev = lockedTotalBalanceDuring[week];
-                uint256 current = totalAssets();
-                if (prev == 0 || current < prev) {
-                    lockedTotalBalanceDuring[week] = current;
-                }
-                break;
-            }
-            if (startWeek < week) {
-                lockedTotalBalanceDuring[week] = lockedTotalBalanceDuring[week - 1];
-            }
+            if (until <= week) break;
+
+            lockedTotalBalanceDuring[week + 1] = lockedTotalBalanceDuring[week];
 
             unchecked {
                 ++i;
@@ -98,13 +94,18 @@ contract FSushiBar is ERC4626, IFSushiBar {
         uint256 assets,
         uint256 shares
     ) internal override {
+        if (block.timestamp < startWeek.toTimestamp()) revert TooEarly();
+
         super._deposit(caller, receiver, assets, shares);
 
         checkpoint();
+
+        lockedTotalBalanceDuring[block.timestamp.toWeekNumber()] += assets;
+        lastDeposit[caller] = block.timestamp;
     }
 
     /**
-     * @dev Withdraw/redeem common workflow.
+     * @dev Users can withdraw only when 1 week have passed after `lastDeposit` of their account
      */
     function _withdraw(
         address caller,
@@ -113,8 +114,12 @@ contract FSushiBar is ERC4626, IFSushiBar {
         uint256 assets,
         uint256 shares
     ) internal override {
+        if (block.timestamp < lastDeposit[owner] + MINIMUM_PERIOD) revert TooEarly();
+
         super._withdraw(caller, receiver, owner, assets, shares);
 
         checkpoint();
+
+        lockedTotalBalanceDuring[block.timestamp.toWeekNumber()] -= assets;
     }
 }
