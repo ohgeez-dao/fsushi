@@ -19,9 +19,9 @@ contract FSushiBar is ERC4626, IFSushiBar {
     /**
      * @return minimum number of staked total assets during the whole week
      */
-    mapping(uint256 => uint256) public override minimumTotalAssetsDuring;
+    mapping(uint256 => uint256) public override lockedTotalBalanceDuring;
     /**
-     * @notice minimumTotalAssetsDuring is guaranteed to be correct before this week
+     * @notice lockedTotalBalanceDuring is guaranteed to be correct before this week
      */
     uint256 public override lastCheckpoint; // week
 
@@ -31,9 +31,9 @@ contract FSushiBar is ERC4626, IFSushiBar {
         lastCheckpoint = nextWeek;
     }
 
-    function checkpointedMinimumTotalAssetsDuring(uint256 week) external override returns (uint256) {
+    function checkpointedLockedTotalBalanceDuring(uint256 week) external override returns (uint256) {
         checkpoint();
-        return minimumTotalAssetsDuring[week];
+        return lockedTotalBalanceDuring[week];
     }
 
     /**
@@ -46,15 +46,15 @@ contract FSushiBar is ERC4626, IFSushiBar {
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
             if (week == until) {
-                uint256 prev = minimumTotalAssetsDuring[week];
+                uint256 prev = lockedTotalBalanceDuring[week];
                 uint256 current = totalAssets();
                 if (prev == 0 || current < prev) {
-                    minimumTotalAssetsDuring[week] = current;
+                    lockedTotalBalanceDuring[week] = current;
                 }
                 break;
             }
             if (startWeek < week) {
-                minimumTotalAssetsDuring[week] = minimumTotalAssetsDuring[week - 1];
+                lockedTotalBalanceDuring[week] = lockedTotalBalanceDuring[week - 1];
             }
 
             unchecked {

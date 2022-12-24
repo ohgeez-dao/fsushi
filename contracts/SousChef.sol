@@ -192,7 +192,7 @@ contract SousChef is Ownable, ISousChef {
             // last week's circulating supply becomes the total rewards in this week
             // (week is already greater than startWeek)
             uint256 rewards = IFSushi(fSushi).checkpointedMaximumTotalSupplyDuring(week - 1) -
-                IFSushiVault(vault).checkpointedMinimumTotalAssetsDuring(week - 1);
+                IFSushiVault(vault).checkpointedLockedTotalBalanceDuring(week - 1);
             // 10x bonus is given only for the first week
             if (week == startWeek + 1) {
                 rewards /= BONUS_MULTIPLIER;
