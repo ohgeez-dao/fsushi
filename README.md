@@ -49,14 +49,15 @@ You can also stake without instant yield and in this case you get `fToken`s that
 
 ### SousChef
 
-By depositing your `fToken` you're eligible for receiving newly minted `fSUSHI` rewards. In the first week, 300,000 `fSUSHI`s will be distributed and in next week, only 1/10 of the circulating supply of the first week will be minted. And from the next week, only the amount of circulating supply of the last week will be minted.
-Thus, you can reduce inflation rate of your `fSUSHI` by locking up your assets to `FSushiLocker`.
+By depositing your `fToken` you're eligible for receiving newly minted `fSUSHI` rewards. In the first week, 300,000 `fSUSHI`s will be distributed and in 2nd week, only 1/10 of the circulating supply of the first week will be minted. (10x boost in the first week)
+And during the 2nd week, only 99% of the first week's circulating supply will be minted. During the 3rd week, only 99% of the second week's circulating supply will be minted. This goes on and on.
+Thus, you can reduce inflation rate of your `fSUSHI` by locking up your assets to `FSushiBar`.
 
 ### FSushi - _fSUSHI_
 
 A plain ERC20 token that only `SousChef` can mint.
 
-### FSushiLocker - _xfSUSHI_
+### FSushiBar - _xfSUSHI_
 
 1% fee is posed as fee for upfront yield and 0.25% for plain staking. These fees will be distributed for `xfSUSHI` holders who locked up their `fSUSHI`. General mechanism isn't much different from `SushiBar` of SushiSwap protocol.
 
