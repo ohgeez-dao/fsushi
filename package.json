@@ -1,17 +1,20 @@
 {
-  "name": "@ohgeez-dao/hardhat-foundation",
+  "name": "@ohgeez-dao/fsushi",
   "description": "",
   "keywords": [
     "levx",
     "ohgeez",
-    "ohgeez-dao"
+    "ohgeez-dao",
+    "sushiswap",
+    "sushi",
+    "fsushi"
   ],
-  "homepage": "https://github.com/ohgeez-dao/hardhat-foundation#readme",
+  "homepage": "https://github.com/ohgeez-dao/fsushi#readme",
   "bugs": {
-    "url": "https://github.com/ohgeez-dao/hardhat-foundation/issues",
+    "url": "https://github.com/ohgeez-dao/fsushi/issues",
     "email": "team@levx.io"
   },
-  "license": "WTFPL",
+  "license": "BSL-1.1",
   "author": "LevX <team@levx.io>",
   "files": [
     "abis",
