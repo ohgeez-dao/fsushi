@@ -25,7 +25,7 @@ const setupTest = async deployTimestamp => {
 
 describe("FSushi", function () {
     it("should mint and checkpoint", async function () {
-        const deployTime = Date.UTC(2023, 0, 1);
+        const deployTime = Math.floor(Date.UTC(2023, 0, 1) / 1000);
         const { alice, bob, carol, fSushi } = await setupTest(deployTime);
 
         const startWeek = toWeekNumber(deployTime) + 1;
@@ -45,12 +45,10 @@ describe("FSushi", function () {
         await fSushi.mint(carol.address, ONE);
         expect(await fSushi.totalSupplyDuring(startWeek)).to.be.equal(ONE.mul(3));
 
-        await fSushi.checkpoint();
+        await mineAtWeekStart(startWeek + 10);
         for (let i = 0; i < 10; i++) {
             expect(await fSushi.totalSupplyDuring(startWeek + i + 1)).to.be.equal(0);
         }
-
-        await mineAtWeekStart(startWeek + 10);
 
         await fSushi.checkpoint();
         for (let i = 0; i < 10; i++) {
