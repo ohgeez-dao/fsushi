@@ -2,6 +2,40 @@
 
 fSUSHI is a protocol built on top of [FlashStake](http://flashstake.io/) and [SushiSwap](https://sushi.com) that enables stakers to get instant, upfront yield without waiting for it to accrue.
 
+## How it works
+
+```
+                                                                         ┌───────────────────┐
+                                                                         │                   │
+                                                                         │      SousChef     │
+                                                                         │                   │
+                                                                         └───────────────┬───┘
+                                                                                ▲        │
+                                                                         fToken │        │ fSUSHI
+                                                                                │        ▼
+                                                                         ╔══════╧════════════╗ aLP Token   ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐             ┌───────────────────┐
+                                                                         ║                   ╟─────────────┤                   │ aLP Token   │                   │
+                                                                         ║       User        ║             │   FlashProtocol   ├────────────►│   FlashStrategy   │
+                                                                         ║                   ║◄────────────┤                   │             │     SushiSwap     │
+                                                                         ╚══════════════╤════╝   fToken    └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘             └───────────────────┘
+                                                                               ▲        │
+                                                                      aLP Token│        │ SLP Token
+                                                                               │        ▼
+┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐ invest SUSHI  ┌───────────────────┐  SUSHI yield  ┌─────┴─────────────┐
+│  AAVE SUSHI pool  │◄──────────────┤                   │◄──────────────┤                   │
+│        or         │               │   SushiBarVault   │               │  AccruedLPToken   │
+│    xSUSHI etc.    ├──────────────►│                   ├──────────────►│                   │
+└╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘ accrued SUSHI └───────────────────┘ accrued SUSHI └──────────────┬────┘
+                                                                               ▲        │
+                                                                   SUSHI yield │        │ SLP Token
+                                                                               │        ▼
+                                                                         ┌╌╌╌╌╌┴╌╌╌╌╌╌╌╌╌╌╌╌╌┐
+                                                                         │                   │
+                                                                         │    MasterChef     │
+                                                                         │                   │
+                                                                         └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘
+```
+
 ## Contracts
 
 ### AccruedLPToken
