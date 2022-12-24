@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "./interfaces/IFSushiBar.sol";
+import "./interfaces/IFSushi.sol";
 import "./libraries/DateUtils.sol";
 
 contract FSushiBar is ERC4626, IFSushiBar {
@@ -63,6 +64,32 @@ contract FSushiBar is ERC4626, IFSushiBar {
         }
 
         lastCheckpoint = until;
+    }
+
+    function depositSigned(
+        uint256 assets,
+        address receiver,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override returns (uint256) {
+        IFSushi(asset()).permit(msg.sender, address(this), assets, deadline, v, r, s);
+
+        return deposit(assets, receiver);
+    }
+
+    function mintSigned(
+        uint256 shares,
+        address receiver,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override returns (uint256) {
+        IFSushi(asset()).permit(msg.sender, address(this), previewMint(shares), deadline, v, r, s);
+
+        return mint(shares, receiver);
     }
 
     function _deposit(
