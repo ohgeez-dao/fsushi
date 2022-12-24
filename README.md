@@ -32,6 +32,7 @@ A plain ERC20 token that only `SousChef` can mint.
 - [ ] Add FSushiMaker
 - [ ] Add FSushiRoll
 - [ ] Implement pool weights in SousChef
+- [ ] Implement fSUSHI multiplier for xfSUSHI stakers in SousChef
 
 ## License
 
