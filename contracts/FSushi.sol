@@ -15,9 +15,9 @@ contract FSushi is Ownable, ERC20, IFSushi {
     /**
      * @return minimum number of minted total supply during the whole week
      */
-    mapping(uint256 => uint256) public override maximumTotalSupplyDuring;
+    mapping(uint256 => uint256) public override totalSupplyDuring;
     /**
-     * @notice maximumTotalSupplyDuring is guaranteed to be correct before this week
+     * @notice totalSupplyDuring is guaranteed to be correct before this week
      */
     uint256 public override lastCheckpoint;
 
@@ -33,9 +33,9 @@ contract FSushi is Ownable, ERC20, IFSushi {
         checkpoint();
     }
 
-    function checkpointedMaximumTotalSupplyDuring(uint256 week) external override returns (uint256) {
+    function checkpointedTotalSupplyDuring(uint256 week) external override returns (uint256) {
         checkpoint();
-        return maximumTotalSupplyDuring[week];
+        return totalSupplyDuring[week];
     }
 
     /**
@@ -48,15 +48,15 @@ contract FSushi is Ownable, ERC20, IFSushi {
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
             if (week == until) {
-                uint256 prev = maximumTotalSupplyDuring[week];
+                uint256 prev = totalSupplyDuring[week];
                 uint256 current = totalSupply();
                 if (current > prev) {
-                    maximumTotalSupplyDuring[week] = current;
+                    totalSupplyDuring[week] = current;
                 }
                 break;
             }
             if (startWeek < week) {
-                maximumTotalSupplyDuring[week] = maximumTotalSupplyDuring[week - 1];
+                totalSupplyDuring[week] = totalSupplyDuring[week - 1];
             }
 
             unchecked {
