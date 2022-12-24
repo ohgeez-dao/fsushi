@@ -12,8 +12,4 @@ library DateUtils {
     function toTimestamp(uint256 weekNumber) internal pure returns (uint256) {
         return weekNumber * WEEK;
     }
-
-    function startOfWeek(uint256 timestamp) internal pure returns (uint256) {
-        return ((timestamp) / WEEK) * WEEK;
-    }
 }
