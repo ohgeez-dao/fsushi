@@ -14,7 +14,7 @@ fSUSHI is a protocol built on top of [FlashStake](http://flashstake.io/) and [Su
                                                                          fToken │        │ fSUSHI
                                                                                 │        ▼
                                                                          ╔══════╧════════════╗ aLP Token   ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐             ┌───────────────────┐
-                                                                         ║                   ╟─────────────┤                   │ aLP Token   │                   │
+                                                                         ║                   ╟────────────►┤                   │ aLP Token   │                   │
                                                                          ║       User        ║             │   FlashProtocol   ├────────────►│   FlashStrategy   │
                                                                          ║                   ║◄────────────┤                   │             │     SushiSwap     │
                                                                          ╚══════════════╤════╝   fToken    └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘             └───────────────────┘
