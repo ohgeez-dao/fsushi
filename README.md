@@ -61,14 +61,6 @@ A plain ERC20 token that only `SousChef` can mint.
 
 1% fee is posed as fee for upfront yield and 0.25% for plain staking. These fees will be distributed for `xfSUSHI` holders who locked up their `fSUSHI`. General mechanism isn't much different from `SushiBar` of SushiSwap protocol.
 
-## TODO
-
-- [ ] Enable migration of LP tokens in AccruedLPToken
-- [ ] Add FSushiMaker
-- [ ] Add FSushiRoll
-- [ ] Implement pool weights in SousChef
-- [ ] Implement fSUSHI multiplier for xfSUSHI stakers in SousChef
-
 ## License
 
 Distributed under the BSL-1.1 License. See `LICENSE` for more information.
