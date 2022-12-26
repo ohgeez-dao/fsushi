@@ -163,7 +163,7 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
     }
 
     /**
-     * @dev amount of sushi that LPs converted to is added to sharesOf(account) and SLP is minted
+     * @dev amount of sushi that LPs converted to is added to sharesOf(account) and aLP is minted
      *  user signature is needed for IUniswapV2Pair.permit()
      */
     function stakeSigned(
@@ -182,7 +182,7 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
     }
 
     /**
-     * @dev amount of sushi that LPs converted to is added to sharesOf(account) and SLP is minted
+     * @dev amount of sushi that LPs converted to is added to sharesOf(account) and aLP is minted
      */
     function stake(
         uint256 amountLP,
@@ -225,7 +225,7 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
     }
 
     /**
-     * @dev amount is added to sharesOf(account) and same amount of SLP is minted
+     * @dev amount is added to sharesOf(account) and same amount of aLP is minted
      *  provided SUSHI is swapped then added as liquidity which results in LP tokens staked
      */
     function stakeWithSushi(
