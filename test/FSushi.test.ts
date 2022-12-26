@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { FSushi } from "../typechain-types";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
@@ -24,6 +24,13 @@ const setupTest = async deployTimestamp => {
 };
 
 describe("FSushi", function () {
+    beforeEach(async () => {
+        await network.provider.request({
+            method: "hardhat_reset",
+            params: [],
+        });
+    });
+
     it("should mint and checkpoint", async function () {
         const deployTime = Math.floor(Date.UTC(2023, 0, 1) / 1000);
         const { alice, bob, carol, fSushi } = await setupTest(deployTime);
