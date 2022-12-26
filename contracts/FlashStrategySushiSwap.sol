@@ -11,7 +11,7 @@ import "./interfaces/IFlashStrategySushiSwapFactory.sol";
 import "./interfaces/IFlashFToken.sol";
 import "./interfaces/IAccruedLPTokenFactory.sol";
 import "./interfaces/IAccruedLPToken.sol";
-import "./interfaces/IFeeVault.sol";
+import "./interfaces/IERC20Receiver.sol";
 
 contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrategySushiSwap {
     using SafeERC20 for IERC20;
@@ -182,7 +182,7 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
 
         IERC20(token).safeTransfer(feeRecipient, fee);
         if (feeRecipient.code.length > 0) {
-            try IFeeVault(feeRecipient).checkpoint(token) {} catch {}
+            try IERC20Receiver(feeRecipient).onReceiveERC20(token, address(this), fee) {} catch {}
         }
     }
 }
