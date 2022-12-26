@@ -191,8 +191,10 @@ contract SousChef is Ownable, ISousChef {
             if (until < week) break;
             // last week's circulating supply becomes the total rewards in this week
             // (week is already greater than startWeek)
-            uint256 rewards = IFSushi(fSushi).checkpointedTotalSupplyDuring(week - 1) -
+            uint256 circulatingSupply = IFSushi(fSushi).checkpointedTotalSupplyDuring(week - 1) -
                 IFSushiVault(vault).checkpointedLockedTotalBalanceDuring(week - 1);
+            // emission rate decreases 1% every week
+            uint256 rewards = (circulatingSupply * 99) / 100;
             // 10x bonus is given only for the first week
             if (week == startWeek + 1) {
                 rewards /= BONUS_MULTIPLIER;
@@ -272,14 +274,17 @@ contract SousChef is Ownable, ISousChef {
         if (_checkpoints.length == 0) return;
 
         // add week-by-week rewards until the last week
-        uint256 rewards;
+        uint256 totalRewards;
         uint256 from = prevWeek.toWeekNumber();
         uint256 to = block.timestamp.toWeekNumber(); // exclusive last index
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
             if (to <= week) break;
             uint256 weight = IFSushiController(controller).relativeWeightAt(pid, week);
-            rewards += (weeklyRewards[week] * weight * userPoints[pid][msg.sender][week]) / points[pid][week] / 1e18;
+            uint256 rewards = (weeklyRewards[week] * weight * userPoints[pid][msg.sender][week]) /
+                points[pid][week] /
+                1e18;
+            totalRewards += rewards;
 
             unchecked {
                 ++i;
@@ -287,11 +292,11 @@ contract SousChef is Ownable, ISousChef {
         }
         nextClaimableWeek[pid][msg.sender] = to;
 
-        if (rewards > 0) {
-            claimedRewards[pid][msg.sender] += rewards;
-            IFSushi(fSushi).mint(beneficiary, rewards);
+        if (totalRewards > 0) {
+            claimedRewards[pid][msg.sender] += totalRewards;
+            IFSushi(fSushi).mint(beneficiary, totalRewards);
 
-            emit ClaimRewards(pid, msg.sender, beneficiary, rewards);
+            emit ClaimRewards(pid, msg.sender, beneficiary, totalRewards);
         }
     }
 
