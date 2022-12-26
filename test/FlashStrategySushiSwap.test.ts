@@ -23,7 +23,9 @@ const ONE = ethers.constants.WeiPerEther;
 const YEAR = 365 * 24 * 3600;
 const DELTA = ethers.BigNumber.from(10).pow(8);
 
-const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
+const fee = (amount, feeBPS) => amount.mul(feeBPS).div(10000);
+
+const setupTest = async feeRecipient => {
     const tokens = await setupTokens();
     const sushi = await setupSushiswap(tokens);
     const [deployer, alice, bob, carol] = await ethers.getSigners();
@@ -52,8 +54,6 @@ const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
     const factory = (await Factory.deploy(
         flashProtocol.address,
         alpFactory.address,
-        stakeFeeBPS,
-        flashStakeFeeBPS,
         feeRecipient.address
     )) as FlashStrategySushiSwapFactory;
 
@@ -168,7 +168,7 @@ describe("FlashStrategySushiSwap", function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
-        const { alice, tokens, flashProtocol, createFlashStrategySushiSwap, mintSLP } = await setupTest(0, 0, feeVault);
+        const { alice, tokens, flashProtocol, createFlashStrategySushiSwap, mintSLP } = await setupTest(feeVault);
 
         // add SUSHI-WETH pool, alpToken and sousChef
         const { sousChef, alpToken, fToken } = await createFlashStrategySushiSwap(tokens.sushi, tokens.weth, 100);
@@ -185,7 +185,11 @@ describe("FlashStrategySushiSwap", function () {
         const amountSLP = amountLP.add(SUSHI_PER_BLOCK.mul(2));
         await flashProtocol.connect(alice).stake(sousChef.address, amountSLP, YEAR, alice.address, false);
         expect(await alpToken.balanceOf(alice.address)).to.be.equal(0);
-        expect(await alpToken.balanceOf(sousChef.address)).to.be.approximately(amountSLP, DELTA);
+        expect(await alpToken.balanceOf(sousChef.address)).to.be.approximately(
+            amountSLP.sub(fee(amountSLP, 25)),
+            DELTA
+        );
+        expect(await alpToken.balanceOf(feeVault.address)).to.be.approximately(fee(amountSLP, 25), DELTA);
         expect(await fToken.balanceOf(alice.address)).to.be.approximately(amountSLP, DELTA);
     });
 });

@@ -95,7 +95,7 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
     }
 
     /**
-     * @return how many SLP rewards should be returned if _amount fERC20 tokens are burned
+     * @return how many aLP rewards should be returned if _amount fERC20 tokens are burned
      */
     function quoteBurnFToken(uint256 _amount) public view override returns (uint256) {
         uint256 totalSupply = IERC20(fToken).totalSupply();
@@ -126,8 +126,13 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
      *  after the stake has ended must be returned.
      */
     function depositPrincipal(uint256 _amount) external override onlyAuthorised returns (uint256) {
-        _balancePrincipal += _amount;
-        return _amount;
+        uint256 fee = _amount / 400; // charge 0.25%
+        _transferFee(alpToken, fee);
+
+        uint256 amount = _amount - fee;
+        _balancePrincipal += amount;
+
+        return amount;
     }
 
     /**
@@ -176,13 +181,18 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
         address to,
         uint256 amount
     ) internal {
-        address feeRecipient = IFlashStrategySushiSwapFactory(factory).feeRecipient();
-        uint256 fee = (amount * IFlashStrategySushiSwapFactory(factory).flashStakeFeeBPS()) / 10000;
+        uint256 fee = amount / 100; // charge 1%
         IERC20(token).safeTransfer(to, amount - fee);
+        _transferFee(token, fee);
+    }
 
-        IERC20(token).safeTransfer(feeRecipient, fee);
-        if (feeRecipient.code.length > 0) {
-            try IERC20Receiver(feeRecipient).onReceiveERC20(token, address(this), fee) {} catch {}
+    function _transferFee(address token, uint256 amount) internal {
+        if (amount > 0) {
+            address feeRecipient = IFlashStrategySushiSwapFactory(factory).feeRecipient();
+            IERC20(token).safeTransfer(feeRecipient, amount);
+            if (feeRecipient.code.length > 0) {
+                try IERC20Receiver(feeRecipient).onReceiveERC20(token, address(this), amount) {} catch {}
+            }
         }
     }
 }

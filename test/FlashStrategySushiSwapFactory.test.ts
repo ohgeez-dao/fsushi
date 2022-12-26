@@ -16,7 +16,7 @@ import {
 import setupSushiswap from "./utils/setupSushiswap";
 import setupTokens from "./utils/setupTokens";
 
-const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
+const setupTest = async feeRecipient => {
     const tokens = await setupTokens();
     const sushi = await setupSushiswap(tokens);
     const [deployer, alice, bob, carol] = await ethers.getSigners();
@@ -45,8 +45,6 @@ const setupTest = async (stakeFeeBPS, flashStakeFeeBPS, feeRecipient) => {
     const factory = (await Factory.deploy(
         flashProtocol.address,
         alpFactory.address,
-        stakeFeeBPS,
-        flashStakeFeeBPS,
         feeRecipient.address
     )) as FlashStrategySushiSwapFactory;
 
@@ -71,7 +69,7 @@ describe("FlashStrategySushiSwapFactory", function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
-        const { tokens, sushi, alpFactory, flashProtocol, factory } = await setupTest(0, 0, feeVault);
+        const { tokens, sushi, alpFactory, flashProtocol, factory } = await setupTest(feeVault);
 
         const { pid } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
         await alpFactory.createAccruedLPToken(pid);
@@ -106,7 +104,7 @@ describe("FlashStrategySushiSwapFactory", function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
-        const { tokens, sushi, alpFactory, flashProtocol, factory } = await setupTest(0, 0, feeVault);
+        const { tokens, sushi, alpFactory, flashProtocol, factory } = await setupTest(feeVault);
 
         const { pid } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
         expect(await alpFactory.getAccruedLPToken(pid)).to.be.equal(constants.AddressZero);
