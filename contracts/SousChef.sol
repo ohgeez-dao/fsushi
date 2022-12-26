@@ -21,10 +21,7 @@ contract SousChef is Ownable, ISousChef {
     using SafeCast for int256;
     using DateUtils for uint256;
 
-    struct Checkpoint_ {
-        uint256 amount;
-        uint256 timestamp;
-    }
+    uint256 internal constant TOKENLESS_PRODUCTION = 40;
 
     uint256 public constant override BONUS_MULTIPLIER = 10;
     uint256 public constant override REWARDS_FOR_INITIAL_WEEK = BONUS_MULTIPLIER * 30000e18;
@@ -52,12 +49,10 @@ contract SousChef is Ownable, ISousChef {
      */
     uint256 internal _lastCheckpoint; // week
 
+    mapping(uint256 => uint256) public override totalSupply; // pid => amount
+    mapping(uint256 => uint256) public override workingSupply; // pid => amount
     /**
-     * @notice new Checkpoint gets appended whenever any deposit/withdraw happens
-     */
-    mapping(uint256 => Checkpoint_[]) public override checkpoints; // pid => checkpoints
-    /**
-     * @notice points = ∫A(t)dt, where A(t) is the amount staked at time t
+     * @notice points = ∫W(t)dt, where W(t) is the working supply at the week
      */
     mapping(uint256 => mapping(uint256 => uint256)) public override points; // pid => week => points
     /**
@@ -65,12 +60,10 @@ contract SousChef is Ownable, ISousChef {
      */
     mapping(uint256 => uint256) public override lastCheckpoint; // pid => timestamp
 
+    mapping(uint256 => mapping(address => uint256)) public override balanceOf; // pid => account => amount
+    mapping(uint256 => mapping(address => uint256)) public override workingBalanceOf; // pid => account => amount
     /**
-     * @notice new Checkpoint gets appended whenever any deposit/withdraw happens from account
-     */
-    mapping(uint256 => mapping(address => Checkpoint_[])) public override userCheckpoints; // pid => account => checkpoints
-    /**
-     * @notice points = ∫A(t)dt, where A(t) is the amount staked at time t
+     * @notice userPoints = ∫w(t)dt, where a(t) is the working balance of account at the week
      */
     mapping(uint256 => mapping(address => mapping(uint256 => uint256))) public override userPoints; // pid => account => week => points
     /**
@@ -102,14 +95,6 @@ contract SousChef is Ownable, ISousChef {
         weeklyRewards[week] = REWARDS_FOR_INITIAL_WEEK;
     }
 
-    function checkpointsLength(uint256 pid) external view override returns (uint256) {
-        return checkpoints[pid].length;
-    }
-
-    function userCheckpointsLength(uint256 pid, address account) external view override returns (uint256) {
-        return userCheckpoints[pid][account].length;
-    }
-
     function updateFSushiVault(address _fSushiVault) external override onlyOwner {
         if (_fSushiVault == address(0)) revert InvalidFSushiVault();
 
@@ -136,15 +121,21 @@ contract SousChef is Ownable, ISousChef {
         address strategy = IFlashStrategySushiSwapFactory(flashStrategyFactory).getFlashStrategySushiSwap(pid);
         if (strategy == address(0)) revert InvalidPid();
 
-        address fToken = IFlashStrategySushiSwap(strategy).fToken();
-        IERC20(fToken).safeTransferFrom(msg.sender, address(this), amount);
+        if (amount > 0) {
+            address fToken = IFlashStrategySushiSwap(strategy).fToken();
+            IERC20(fToken).safeTransferFrom(msg.sender, address(this), amount);
 
-        _appendCheckpoint(checkpoints[pid], amount.toInt256());
-        _appendCheckpoint(userCheckpoints[pid][msg.sender], amount.toInt256());
+            _userCheckpoint(pid, msg.sender);
 
-        userCheckpoint(pid, msg.sender);
+            uint256 _balance = balanceOf[pid][msg.sender] + amount;
+            balanceOf[pid][msg.sender] = _balance;
+            uint256 _totalSupply = totalSupply[pid] + amount;
+            totalSupply[pid] = _totalSupply;
 
-        IFSushi(fSushi).mint(beneficiary, amount);
+            _updateWorkingBalance(pid, msg.sender, _balance, _totalSupply);
+
+            IFSushi(fSushi).mint(beneficiary, amount);
+        }
 
         emit Deposit(pid, amount, beneficiary);
     }
@@ -157,27 +148,19 @@ contract SousChef is Ownable, ISousChef {
         address strategy = IFlashStrategySushiSwapFactory(flashStrategyFactory).getFlashStrategySushiSwap(pid);
         if (strategy == address(0)) revert InvalidPid();
 
-        _appendCheckpoint(checkpoints[pid], -amount.toInt256());
-        _appendCheckpoint(userCheckpoints[pid][beneficiary], -amount.toInt256());
+        if (amount > 0) {
+            uint256 _balance = balanceOf[pid][msg.sender] - amount;
+            balanceOf[pid][msg.sender] = _balance;
+            uint256 _totalSupply = totalSupply[pid] - amount;
+            totalSupply[pid] = _totalSupply;
 
-        userCheckpoint(pid, msg.sender);
+            _updateWorkingBalance(pid, msg.sender, _balance, _totalSupply);
 
-        address fToken = IFlashStrategySushiSwap(strategy).fToken();
-        IERC20(fToken).safeTransfer(beneficiary, amount);
+            address fToken = IFlashStrategySushiSwap(strategy).fToken();
+            IERC20(fToken).safeTransfer(beneficiary, amount);
+        }
 
         emit Withdraw(pid, amount, beneficiary);
-    }
-
-    function _appendCheckpoint(Checkpoint_[] storage _checkpoints, int256 amount)
-        internal
-        returns (Checkpoint_ memory last)
-    {
-        last = _getCheckpointAt(_checkpoints, -1);
-        Checkpoint_ memory newCheckpoint = Checkpoint_(
-            last.amount + (amount < 0 ? -amount : amount).toUint256(),
-            block.timestamp
-        );
-        _checkpoints.push(newCheckpoint);
     }
 
     /**
@@ -208,7 +191,7 @@ contract SousChef is Ownable, ISousChef {
         _lastCheckpoint = until;
 
         uint256 prevCheckpoint = lastCheckpoint[pid];
-        _updatePoints(checkpoints[pid], points[pid], prevCheckpoint);
+        _updatePoints(points[pid], workingSupply[pid], prevCheckpoint);
         if (prevCheckpoint < block.timestamp) {
             lastCheckpoint[pid] = block.timestamp;
         }
@@ -216,11 +199,16 @@ contract SousChef is Ownable, ISousChef {
         emit Checkpoint(pid);
     }
 
-    function userCheckpoint(uint256 pid, address account) public override {
+    function userCheckpoint(uint256 pid, address account) external override {
+        _userCheckpoint(pid, account);
+        _updateWorkingBalance(pid, account, balanceOf[pid][account], totalSupply[pid]);
+    }
+
+    function _userCheckpoint(uint256 pid, address account) internal {
         checkpoint(pid);
 
         uint256 prevCheckpoint = userLastCheckpoint[pid][account];
-        _updatePoints(userCheckpoints[pid][account], userPoints[pid][account], prevCheckpoint);
+        _updatePoints(userPoints[pid][account], workingBalanceOf[pid][account], prevCheckpoint);
         if (prevCheckpoint < block.timestamp) {
             userLastCheckpoint[pid][account] = block.timestamp;
         }
@@ -229,30 +217,30 @@ contract SousChef is Ownable, ISousChef {
     }
 
     function _updatePoints(
-        Checkpoint_[] storage _checkpoints,
         mapping(uint256 => uint256) storage _points,
+        uint256 workingBalance,
         uint256 lastTime
     ) internal {
-        if (_checkpoints.length == 0 || lastTime == block.timestamp) return;
+        if (workingBalance == 0) return;
+
         if (lastTime == 0) {
             lastTime = startWeek.toTimestamp();
         }
 
         uint256 from = lastTime.toWeekNumber();
-        Checkpoint_ memory last = _getCheckpointAt(_checkpoints, -1);
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
             uint256 weekStart = week.toTimestamp();
             uint256 weekEnd = weekStart + WEEK;
             if (block.timestamp <= weekStart) break;
             if (block.timestamp < weekEnd) {
-                _points[week] += last.amount * (block.timestamp - Math.max(last.timestamp, weekStart));
+                _points[week] += workingBalance * (block.timestamp - Math.max(lastTime, weekStart));
                 break;
             }
             if (i == 0) {
-                _points[week] += last.amount * (weekEnd - lastTime);
+                _points[week] += workingBalance * (weekEnd - lastTime);
             } else {
-                _points[week] += last.amount * WEEK;
+                _points[week] += workingBalance * WEEK;
             }
 
             unchecked {
@@ -261,17 +249,43 @@ contract SousChef is Ownable, ISousChef {
         }
     }
 
+    function _updateWorkingBalance(
+        uint256 pid,
+        address account,
+        uint256 balance,
+        uint256 supply
+    ) internal {
+        address _vault = vault;
+        IFSushiVault(_vault).userCheckpoint(account);
+
+        uint256 week = block.timestamp.toWeekNumber();
+        uint256 lockedBalance = IFSushiVault(_vault).lockedUserBalanceDuring(account, week - 1);
+        uint256 lockedTotal = IFSushiVault(_vault).lockedTotalBalanceDuring(week - 1);
+
+        uint256 workingBalance = (balance * TOKENLESS_PRODUCTION) / 100;
+        if (lockedTotal > 0) {
+            workingBalance += (((supply * lockedBalance) / lockedTotal) * (100 - TOKENLESS_PRODUCTION)) / 100;
+        }
+
+        workingBalance = Math.min(workingBalance, balance);
+
+        uint256 prevBalance = workingBalanceOf[pid][account];
+        workingBalanceOf[pid][account] = workingBalance;
+
+        uint256 _workingSupply = workingSupply[pid] + workingBalance - prevBalance;
+        workingSupply[pid] = _workingSupply;
+
+        emit UpdateWorkingBalance(pid, account, workingBalance, _workingSupply);
+    }
+
     function claimRewards(uint256 pid, address beneficiary) external {
-        userCheckpoint(pid, msg.sender);
+        _userCheckpoint(pid, msg.sender);
 
         uint256 prevWeek = nextClaimableWeek[pid][msg.sender];
         if (prevWeek == block.timestamp) return;
         if (prevWeek == 0) {
             prevWeek = startWeek.toTimestamp();
         }
-
-        Checkpoint_[] storage _checkpoints = userCheckpoints[pid][msg.sender];
-        if (_checkpoints.length == 0) return;
 
         // add week-by-week rewards until the last week
         uint256 totalRewards;
@@ -297,20 +311,6 @@ contract SousChef is Ownable, ISousChef {
             IFSushi(fSushi).mint(beneficiary, totalRewards);
 
             emit ClaimRewards(pid, msg.sender, beneficiary, totalRewards);
-        }
-    }
-
-    function _getCheckpointAt(Checkpoint_[] storage _checkpoints, int256 index)
-        internal
-        view
-        returns (Checkpoint_ memory)
-    {
-        uint256 length = _checkpoints.length;
-        uint256 _index = index < 0 ? (length - (-index).toUint256()) : index.toUint256();
-        if (length <= _index) {
-            return Checkpoint_(0, startWeek);
-        } else {
-            return _checkpoints[_index];
         }
     }
 }

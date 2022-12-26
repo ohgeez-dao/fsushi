@@ -15,6 +15,12 @@ interface ISousChef {
     event Withdraw(uint256 indexed pid, uint256 amount, address indexed beneficiary);
     event Checkpoint(uint256 indexed pid);
     event UserCheckpoint(uint256 indexed pid, address indexed account);
+    event UpdateWorkingBalance(
+        uint256 indexed pid,
+        address indexed account,
+        uint256 workingBalance,
+        uint256 workingSupply
+    );
     event ClaimRewards(uint256 indexed pid, address indexed account, address indexed beneficiary, uint256 amount);
 
     function BONUS_MULTIPLIER() external view returns (uint256);
@@ -33,27 +39,23 @@ interface ISousChef {
 
     function weeklyRewards(uint256 time) external view returns (uint256);
 
-    function checkpointsLength(uint256 pid) external view returns (uint256);
+    function totalSupply(uint256 pid) external view returns (uint256);
 
-    function checkpoints(uint256 pid, uint256 index) external view returns (uint256 amount, uint256 timestamp);
+    function workingSupply(uint256 pid) external view returns (uint256);
 
     function points(uint256 pid, uint256 time) external view returns (uint256);
 
     function lastCheckpoint(uint256 pid) external view returns (uint256 time);
+
+    function balanceOf(uint256 pid, address account) external view returns (uint256);
+
+    function workingBalanceOf(uint256 pid, address account) external view returns (uint256);
 
     function userPoints(
         uint256 pid,
         address account,
         uint256 time
     ) external view returns (uint256);
-
-    function userCheckpointsLength(uint256 pid, address account) external view returns (uint256);
-
-    function userCheckpoints(
-        uint256 pid,
-        address account,
-        uint256 index
-    ) external view returns (uint256 amount, uint256 timestamp);
 
     function userLastCheckpoint(uint256 pid, address account) external view returns (uint256 time);
 

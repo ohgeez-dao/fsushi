@@ -28,6 +28,15 @@ contract FSushiBar is ERC4626, IFSushiBar {
      * @notice lockedTotalBalanceDuring is guaranteed to be correct before this week
      */
     uint256 public override lastCheckpoint; // week
+    /**
+     * @dev this is guaranteed to be correct up until the last week
+     * @return minimum number of staked assets of account during the whole week
+     */
+    mapping(address => mapping(uint256 => uint256)) public override lockedUserBalanceDuring;
+    /**
+     * @notice lockedUserBalanceDuring is guaranteed to be correct before this week
+     */
+    mapping(address => uint256) public override lastUserCheckpoint; // week
 
     constructor(address fSushi) ERC4626(IERC20(fSushi)) ERC20("Flash SushiBar", "xfSUSHI") {
         uint256 nextWeek = block.timestamp.toWeekNumber() + 1;
@@ -38,6 +47,11 @@ contract FSushiBar is ERC4626, IFSushiBar {
     function checkpointedLockedTotalBalanceDuring(uint256 week) external override returns (uint256) {
         checkpoint();
         return lockedTotalBalanceDuring[week];
+    }
+
+    function checkpointedLockedUserBalanceDuring(address account, uint256 week) external override returns (uint256) {
+        checkpoint();
+        return lockedUserBalanceDuring[account][week];
     }
 
     /**
@@ -60,6 +74,30 @@ contract FSushiBar is ERC4626, IFSushiBar {
         }
 
         lastCheckpoint = until;
+    }
+
+    /**
+     * @dev if this function doesn't get called for 512 weeks (around 9.8 years) this contract breaks
+     */
+    function userCheckpoint(address account) public override {
+        checkpoint();
+
+        uint256 from = lastUserCheckpoint[account];
+        uint256 until = block.timestamp.toWeekNumber();
+        if (from == until) return;
+
+        for (uint256 i; i < 512; ) {
+            uint256 week = from + i;
+            if (until <= week) break;
+
+            lockedUserBalanceDuring[account][week + 1] = lockedUserBalanceDuring[account][week];
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        lastUserCheckpoint[account] = until;
     }
 
     function depositSigned(
@@ -98,9 +136,11 @@ contract FSushiBar is ERC4626, IFSushiBar {
 
         super._deposit(caller, receiver, assets, shares);
 
-        checkpoint();
+        userCheckpoint(msg.sender);
 
-        lockedTotalBalanceDuring[block.timestamp.toWeekNumber()] += assets;
+        uint256 week = block.timestamp.toWeekNumber();
+        lockedTotalBalanceDuring[week] += assets;
+        lockedUserBalanceDuring[msg.sender][week] += assets;
         lastDeposit[caller] = block.timestamp;
     }
 
@@ -118,8 +158,10 @@ contract FSushiBar is ERC4626, IFSushiBar {
 
         super._withdraw(caller, receiver, owner, assets, shares);
 
-        checkpoint();
+        userCheckpoint(msg.sender);
 
-        lockedTotalBalanceDuring[block.timestamp.toWeekNumber()] -= assets;
+        uint256 week = block.timestamp.toWeekNumber();
+        lockedTotalBalanceDuring[week] -= assets;
+        lockedUserBalanceDuring[msg.sender][week] -= assets;
     }
 }
