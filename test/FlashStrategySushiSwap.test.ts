@@ -142,7 +142,7 @@ const setupTest = async feeRecipient => {
         const amountLP = await lpToken.balanceOf(account.address);
         await lpToken.connect(account).approve(alpToken.address, constants.MaxUint256);
         const params = await getStakeParameters(lpToken, amountLP, account);
-        await alpToken.connect(account).stake(...params);
+        await alpToken.connect(account).deposit(...params);
         return params[3];
     };
 

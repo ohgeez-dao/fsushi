@@ -81,21 +81,21 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
     }
 
     /**
-     * @return Sum of (shares in SUSHI by staked account) + (SUSHI withdrawable by account)
+     * @return Sum of (shares in SUSHI by depositd account) + (SUSHI withdrawable by account)
      */
     function balanceOf(address account) public view override(BaseERC20, IERC20) returns (uint256) {
         return sharesOf(account) + withdrawableYieldOf(account);
     }
 
     /**
-     * @return total shares in SUSHI currently being staked
+     * @return total shares in SUSHI currently being depositd
      */
     function totalShares() public view override returns (uint256) {
         return _totalSupply;
     }
 
     /**
-     * @return shares in SUSHI currently being staked by account
+     * @return shares in SUSHI currently being depositd by account
      */
     function sharesOf(address account) public view override returns (uint256) {
         return _balanceOf[account];
@@ -166,7 +166,7 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
      * @dev amount of sushi that LPs converted to is added to sharesOf(account) and aLP is minted
      *  user signature is needed for IUniswapV2Pair.permit()
      */
-    function stakeSigned(
+    function depositSigned(
         uint256 amountLP,
         address[] calldata path0,
         address[] calldata path1,
@@ -178,13 +178,13 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
         bytes32 s
     ) external override nonReentrant {
         IUniswapV2Pair(lpToken).permit(msg.sender, address(this), amountLP, deadline, v, r, s);
-        _stake(amountLP, path0, path1, amountMin, beneficiary);
+        _deposit(amountLP, path0, path1, amountMin, beneficiary);
     }
 
     /**
      * @dev amount of sushi that LPs converted to is added to sharesOf(account) and aLP is minted
      */
-    function stake(
+    function deposit(
         uint256 amountLP,
         address[] calldata path0,
         address[] calldata path1,
@@ -193,10 +193,10 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
         uint256 deadline
     ) external override nonReentrant {
         if (block.timestamp > deadline) revert Expired();
-        _stake(amountLP, path0, path1, amountMin, beneficiary);
+        _deposit(amountLP, path0, path1, amountMin, beneficiary);
     }
 
-    function _stake(
+    function _deposit(
         uint256 amountLP,
         address[] calldata path0,
         address[] calldata path1,
@@ -221,14 +221,14 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
         _mint(beneficiary, amount);
         withdrawableTotalLPs += amountLP;
 
-        emit Stake(amount, amountLP, beneficiary);
+        emit Deposit(amount, amountLP, beneficiary);
     }
 
     /**
      * @dev amount is added to sharesOf(account) and same amount of aLP is minted
-     *  provided SUSHI is swapped then added as liquidity which results in LP tokens staked
+     *  provided SUSHI is swapped then added as liquidity which results in LP tokens depositd
      */
-    function stakeWithSushi(
+    function depositWithSushi(
         uint256 amount,
         address[] calldata path0,
         address[] calldata path1,
@@ -249,27 +249,27 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
         _mint(beneficiary, amount);
         withdrawableTotalLPs += amountLP;
 
-        emit Stake(amount, amountLP, beneficiary);
+        emit Deposit(amount, amountLP, beneficiary);
     }
 
     /**
      * @dev when unstaking, the user's share of LP tokens are returned and pro-rata SUSHI yield is return as well
      */
-    function unstake(uint256 shares, address beneficiary) external override nonReentrant {
+    function withdraw(uint256 shares, address beneficiary) external override nonReentrant {
         uint256 amountLP = (shares * withdrawableTotalLPs) / totalShares();
         IMasterChef(masterChef).withdraw(pid, amountLP);
 
-        _withdrawSushi(shares, beneficiary);
+        _claimSushi(shares, beneficiary);
 
         IERC20(lpToken).safeTransfer(beneficiary, amountLP);
 
         _burn(msg.sender, shares);
         withdrawableTotalLPs -= amountLP;
 
-        emit Unstake(shares, amountLP, beneficiary);
+        emit Withdraw(shares, amountLP, beneficiary);
     }
 
-    function _withdrawSushi(uint256 shares, address beneficiary) internal {
+    function _claimSushi(uint256 shares, address beneficiary) internal {
         _depositSushi();
 
         uint256 sharesMax = sharesOf(msg.sender);
@@ -284,13 +284,34 @@ contract AccruedLPToken is BaseERC20, ReentrancyGuard, IAccruedLPToken {
 
         uint256 yield = IERC4626(yieldVault).redeem(yieldShares, beneficiary, address(this));
 
-        emit WithdrawSushi(shares, yield, beneficiary);
+        emit ClaimSushi(shares, yield, beneficiary);
+    }
+
+    /**
+     * @dev withdraw without caring about rewards. EMERGENCY ONLY
+     */
+    function emergencyWithdraw(address beneficiary) external override nonReentrant {
+        uint256 shares = sharesOf(msg.sender);
+        uint256 amountLP = (shares * withdrawableTotalLPs) / totalShares();
+        IMasterChef(masterChef).withdraw(pid, amountLP);
+
+        IERC20(lpToken).safeTransfer(beneficiary, amountLP);
+
+        _burn(msg.sender, shares);
+        withdrawableTotalLPs -= amountLP;
+
+        emit EmergencyWithdraw(shares, amountLP, beneficiary);
     }
 
     /**
      * @dev withdraws pending SUSHI from MasterChef and add it to the balance
      */
     function checkpoint() external override nonReentrant {
+        uint256 balance = IERC20(lpToken).balanceOf(address(this));
+        if (balance > withdrawableTotalLPs) {
+            withdrawableTotalLPs = balance;
+        }
+
         IMasterChef(masterChef).deposit(pid, 0);
         _depositSushi();
     }

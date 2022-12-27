@@ -97,7 +97,7 @@ const setupTest = async () => {
         return amountOuts[amountOuts.length - 1];
     };
 
-    const getStakeParameters = async (lpToken, amountLP, beneficiary) => {
+    const getDepositParameters = async (lpToken, amountLP, beneficiary) => {
         const [token0, token1] = [await lpToken.token0(), await lpToken.token1()];
         const totalSupply = await lpToken.totalSupply();
         const [reserve0, reserve1] = await lpToken.getReserves();
@@ -111,7 +111,7 @@ const setupTest = async () => {
         return [amountLP, path0, path1, amount, beneficiary.address, (await now()) + 60] as const;
     };
 
-    const getStakeWithSushiParameters = async (amountIn, tokenA, tokenB, beneficiary) => {
+    const getDepositWithSushiParameters = async (amountIn, tokenA, tokenB, beneficiary) => {
         const pair = await sushi.factory.getPair(tokenA.address, tokenB.address);
         expect(pair).not.equals(constants.AddressZero);
         const lpToken = await UniswapV2Pair__factory.connect(pair, ethers.provider);
@@ -136,12 +136,12 @@ const setupTest = async () => {
         return [amountIn, path0, path1, amountLP, beneficiary.address, (await now()) + 60] as const;
     };
 
-    const stakeWithSushi = async (account, alpToken, amountIn, tokenA, tokenB) => {
-        const params = await getStakeWithSushiParameters(amountIn, tokenA, tokenB, account);
-        const tx = await alpToken.connect(account).stakeWithSushi(...params);
+    const depositWithSushi = async (account, alpToken, amountIn, tokenA, tokenB) => {
+        const params = await getDepositWithSushiParameters(amountIn, tokenA, tokenB, account);
+        const tx = await alpToken.connect(account).depositWithSushi(...params);
         const { logs } = await tx.wait();
         const ifc = IAccruedLPToken__factory.createInterface();
-        const topic = ifc.getEventTopic("Stake");
+        const topic = ifc.getEventTopic("Deposit");
         const log = logs.find(log => log.topics.includes(topic));
         if (log) return ifc.parseLog(log).args;
     };
@@ -156,15 +156,15 @@ const setupTest = async () => {
         vault,
         factory,
         createAccruedLPToken,
-        getStakeParameters,
-        stakeWithSushi,
+        getDepositParameters,
+        depositWithSushi,
     };
 };
 
 describe("AccruedLPToken", function () {
-    describe("#stake()", function () {
-        it("should stake in 1 pool for 1 account", async function () {
-            const { alice, tokens, sushi, createAccruedLPToken, getStakeParameters } = await setupTest();
+    describe("#deposit()", function () {
+        it("should deposit in 1 pool for 1 account", async function () {
+            const { alice, tokens, sushi, createAccruedLPToken, getDepositParameters } = await setupTest();
 
             // add SUSHI-WETH pool
             const { pid, lpToken } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
@@ -177,8 +177,8 @@ describe("AccruedLPToken", function () {
             expect(await alpToken.balanceOf(alice.address)).to.be.equal(0);
 
             await lpToken.connect(alice).approve(alpToken.address, constants.MaxUint256);
-            const params = await getStakeParameters(lpToken, ONE, alice);
-            await alpToken.connect(alice).stake(...params);
+            const params = await getDepositParameters(lpToken, ONE, alice);
+            await alpToken.connect(alice).deposit(...params);
             const shares = params[3];
             expect(await lpToken.balanceOf(alice.address)).to.be.equal(0);
             expect(await lpToken.balanceOf(sushi.chef.address)).to.be.equal(ONE);
@@ -191,14 +191,14 @@ describe("AccruedLPToken", function () {
                 DELTA
             );
 
-            await alpToken.connect(alice).unstake(shares, alice.address);
+            await alpToken.connect(alice).withdraw(shares, alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.equal(ONE);
             expect(await alpToken.balanceOf(alice.address)).to.be.equal(0);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(33), DELTA);
         });
 
-        it("should stake in 1 pool for multiple accounts", async function () {
-            const { alice, bob, carol, tokens, sushi, vault, createAccruedLPToken, getStakeParameters } =
+        it("should deposit in 1 pool for multiple accounts", async function () {
+            const { alice, bob, carol, tokens, sushi, vault, createAccruedLPToken, getDepositParameters } =
                 await setupTest();
 
             // add SUSHI-WETH pool
@@ -221,14 +221,14 @@ describe("AccruedLPToken", function () {
             await lpToken.connect(bob).approve(alpToken.address, constants.MaxUint256);
             await lpToken.connect(carol).approve(alpToken.address, constants.MaxUint256);
 
-            const paramsA = await getStakeParameters(lpToken, ONE, alice);
+            const paramsA = await getDepositParameters(lpToken, ONE, alice);
             const sharesA = paramsA[3];
-            await alpToken.connect(alice).stake(...paramsA);
+            await alpToken.connect(alice).deposit(...paramsA);
             expect(await alpToken.sharesOf(alice.address)).to.be.equal(sharesA);
 
-            const paramsB = await getStakeParameters(lpToken, ONE, bob);
+            const paramsB = await getDepositParameters(lpToken, ONE, bob);
             const sharesB = paramsB[3];
-            await alpToken.connect(bob).stake(...paramsB);
+            await alpToken.connect(bob).deposit(...paramsB);
             expect(await alpToken.sharesOf(bob.address)).to.be.equal(sharesB);
             expect(await vault.balanceOf(alpToken.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
             expect(await alpToken.withdrawableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
@@ -239,7 +239,7 @@ describe("AccruedLPToken", function () {
                 DELTA
             );
 
-            await alpToken.connect(alice).unstake(sharesA, alice.address);
+            await alpToken.connect(alice).withdraw(sharesA, alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.equal(ONE);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(16), DELTA);
             expect(await alpToken.withdrawableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(15), DELTA);
@@ -248,24 +248,24 @@ describe("AccruedLPToken", function () {
             await mineBlocks(32);
             expect(await alpToken.withdrawableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(47), DELTA);
 
-            await alpToken.connect(bob).unstake(sharesB, bob.address);
+            await alpToken.connect(bob).withdraw(sharesB, bob.address);
             expect(await tokens.sushi.balanceOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(48), DELTA);
             expect(await alpToken.withdrawableYieldOf(bob.address)).to.be.equal(0);
             expect(await vault.balanceOf(alpToken.address)).to.be.approximately(0, DELTA);
 
             await mineBlocks(31);
-            const paramsC = await getStakeParameters(lpToken, ONE, carol);
+            const paramsC = await getDepositParameters(lpToken, ONE, carol);
             const sharesC = paramsC[3];
-            await alpToken.connect(carol).stake(...paramsC);
+            await alpToken.connect(carol).deposit(...paramsC);
             expect(await alpToken.sharesOf(carol.address)).to.be.equal(sharesC);
 
             await mineBlocks(31);
-            await alpToken.connect(carol).unstake(sharesC, carol.address);
+            await alpToken.connect(carol).withdraw(sharesC, carol.address);
             expect(await tokens.sushi.balanceOf(carol.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(32), DELTA);
         });
 
-        it("should stake in multiple pools for 1 account", async function () {
-            const { alice, tokens, sushi, createAccruedLPToken, getStakeParameters } = await setupTest();
+        it("should deposit in multiple pools for 1 account", async function () {
+            const { alice, tokens, sushi, createAccruedLPToken, getDepositParameters } = await setupTest();
 
             const pools = [];
             for (const pool of [
@@ -291,9 +291,9 @@ describe("AccruedLPToken", function () {
             const shares = [];
             for (const pool of pools) {
                 await pool.lpToken.connect(alice).approve(pool.alpToken.address, constants.MaxUint256);
-                const params = await getStakeParameters(pool.lpToken, ONE, alice);
+                const params = await getDepositParameters(pool.lpToken, ONE, alice);
                 shares.push(params[3]);
-                await pool.alpToken.connect(alice).stake(...params);
+                await pool.alpToken.connect(alice).deposit(...params);
             }
             expect(await pools[0].alpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.mul(2),
@@ -311,7 +311,7 @@ describe("AccruedLPToken", function () {
                 DELTA
             );
 
-            await pools[0].alpToken.connect(alice).unstake(shares[0], alice.address);
+            await pools[0].alpToken.connect(alice).withdraw(shares[0], alice.address);
             expect(await pools[0].lpToken.balanceOf(alice.address)).to.be.equal(ONE);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(16), DELTA);
 
@@ -321,7 +321,7 @@ describe("AccruedLPToken", function () {
                 DELTA
             );
 
-            await pools[1].alpToken.connect(alice).unstake(shares[1], alice.address);
+            await pools[1].alpToken.connect(alice).withdraw(shares[1], alice.address);
             expect(await pools[1].lpToken.balanceOf(alice.address)).to.be.equal(ONE);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(32), DELTA);
 
@@ -331,15 +331,15 @@ describe("AccruedLPToken", function () {
                 DELTA
             );
 
-            await pools[2].alpToken.connect(alice).unstake(shares[2], alice.address);
+            await pools[2].alpToken.connect(alice).withdraw(shares[2], alice.address);
             expect(await pools[2].lpToken.balanceOf(alice.address)).to.be.equal(ONE);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(56), DELTA);
         });
     });
 
-    describe("#stakeWithSushi()", function () {
-        it("should stake in 1 pool for 1 account", async function () {
-            const { deployer, alice, tokens, sushi, vault, createAccruedLPToken, stakeWithSushi } = await setupTest();
+    describe("#depositWithSushi()", function () {
+        it("should deposit in 1 pool for 1 account", async function () {
+            const { deployer, alice, tokens, sushi, vault, createAccruedLPToken, depositWithSushi } = await setupTest();
 
             // add SUSHI-WETH pool
             await sushi.addPool(tokens.sushi, tokens.weth, 0);
@@ -376,7 +376,7 @@ describe("AccruedLPToken", function () {
             await tokens.sushi.transfer(alice.address, ONE.add(1000));
             await tokens.sushi.connect(alice).approve(alpToken.address, constants.MaxUint256);
 
-            await stakeWithSushi(alice, alpToken, ONE, tokens.usdc, tokens.weth);
+            await depositWithSushi(alice, alpToken, ONE, tokens.usdc, tokens.weth);
             expect(await alpToken.sharesOf(alice.address)).to.be.equal(ONE);
             expect(await alpToken.balanceOf(alice.address)).to.be.equal(ONE);
 
@@ -388,15 +388,15 @@ describe("AccruedLPToken", function () {
             expect(await vault.balanceOf(alpToken.address)).to.be.equal(0);
 
             const amountLP = await getAmountLP(ONE);
-            await alpToken.connect(alice).unstake(ONE, alice.address);
+            await alpToken.connect(alice).withdraw(ONE, alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.approximately(amountLP, DELTA);
             expect(await alpToken.balanceOf(alice.address)).to.be.equal(0);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(33), DELTA);
             expect(await vault.balanceOf(alpToken.address)).to.be.approximately(0, DELTA);
         });
 
-        it("should stake in 1 pool for multiple accounts", async function () {
-            const { deployer, alice, bob, carol, tokens, sushi, vault, createAccruedLPToken, stakeWithSushi } =
+        it("should deposit in 1 pool for multiple accounts", async function () {
+            const { deployer, alice, bob, carol, tokens, sushi, vault, createAccruedLPToken, depositWithSushi } =
                 await setupTest();
 
             // add SUSHI-WETH pool
@@ -438,10 +438,10 @@ describe("AccruedLPToken", function () {
             await tokens.sushi.connect(bob).approve(alpToken.address, constants.MaxUint256);
             await tokens.sushi.connect(carol).approve(alpToken.address, constants.MaxUint256);
 
-            await stakeWithSushi(alice, alpToken, ONE, tokens.usdc, tokens.weth);
+            await depositWithSushi(alice, alpToken, ONE, tokens.usdc, tokens.weth);
             expect(await alpToken.sharesOf(alice.address)).to.be.equal(ONE);
 
-            await stakeWithSushi(bob, alpToken, ONE, tokens.usdc, tokens.weth);
+            await depositWithSushi(bob, alpToken, ONE, tokens.usdc, tokens.weth);
             expect(await alpToken.sharesOf(bob.address)).to.be.equal(ONE);
             expect(await vault.balanceOf(alpToken.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
             expect(await alpToken.withdrawableYieldOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
@@ -453,7 +453,7 @@ describe("AccruedLPToken", function () {
             );
 
             const amountLPA = await getAmountLP(ONE);
-            await alpToken.connect(alice).unstake(ONE, alice.address);
+            await alpToken.connect(alice).withdraw(ONE, alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.approximately(amountLPA, DELTA);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(16), DELTA);
             expect(await alpToken.withdrawableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(15), DELTA);
@@ -463,7 +463,7 @@ describe("AccruedLPToken", function () {
             expect(await alpToken.withdrawableYieldOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(47), DELTA);
 
             const amountLPB = await getAmountLP(ONE);
-            await alpToken.connect(bob).unstake(ONE, bob.address);
+            await alpToken.connect(bob).withdraw(ONE, bob.address);
             expect(await lpToken.balanceOf(bob.address)).to.be.equal(amountLPB);
             expect(await tokens.sushi.balanceOf(bob.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(48), DELTA);
             expect(await alpToken.withdrawableYieldOf(bob.address)).to.be.equal(0);
@@ -471,7 +471,7 @@ describe("AccruedLPToken", function () {
 
             await mineBlocks(31);
 
-            await stakeWithSushi(carol, alpToken, ONE, tokens.usdc, tokens.weth);
+            await depositWithSushi(carol, alpToken, ONE, tokens.usdc, tokens.weth);
             expect(await alpToken.sharesOf(carol.address)).to.be.equal(ONE);
 
             await mineBlocks(31);
@@ -481,15 +481,15 @@ describe("AccruedLPToken", function () {
             );
 
             const amountLPC = await getAmountLP(ONE);
-            await alpToken.connect(carol).unstake(ONE, carol.address);
+            await alpToken.connect(carol).withdraw(ONE, carol.address);
             expect(await lpToken.balanceOf(carol.address)).to.be.equal(amountLPC);
             expect(await tokens.sushi.balanceOf(carol.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(32), DELTA);
             expect(await alpToken.withdrawableYieldOf(bob.address)).to.be.equal(0);
             expect(await vault.balanceOf(alpToken.address)).to.be.approximately(0, DELTA);
         });
 
-        it("should stake in multiple pools for 1 account", async function () {
-            const { deployer, alice, tokens, sushi, createAccruedLPToken, stakeWithSushi } = await setupTest();
+        it("should deposit in multiple pools for 1 account", async function () {
+            const { deployer, alice, tokens, sushi, createAccruedLPToken, depositWithSushi } = await setupTest();
 
             // add SUSHI-WETH pool
             await sushi.addPool(tokens.sushi, tokens.weth, 0);
@@ -523,7 +523,7 @@ describe("AccruedLPToken", function () {
 
             for (const pool of pools) {
                 await tokens.sushi.connect(alice).approve(pool.alpToken.address, constants.MaxUint256);
-                await stakeWithSushi(alice, pool.alpToken, ONE, pool.token0, pool.token1);
+                await depositWithSushi(alice, pool.alpToken, ONE, pool.token0, pool.token1);
             }
             expect(await pools[0].alpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
                 SUSHI_PER_BLOCK.mul(2),
@@ -542,7 +542,7 @@ describe("AccruedLPToken", function () {
             );
 
             const amountLP0 = await pools[0].getAmountLP(ONE);
-            await pools[0].alpToken.connect(alice).unstake(ONE, alice.address);
+            await pools[0].alpToken.connect(alice).withdraw(ONE, alice.address);
             expect(await pools[0].lpToken.balanceOf(alice.address)).to.be.equal(amountLP0);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(16), DELTA);
 
@@ -553,7 +553,7 @@ describe("AccruedLPToken", function () {
             );
 
             const amountLP1 = await pools[1].getAmountLP(ONE);
-            await pools[1].alpToken.connect(alice).unstake(ONE, alice.address);
+            await pools[1].alpToken.connect(alice).withdraw(ONE, alice.address);
             expect(await pools[1].lpToken.balanceOf(alice.address)).to.be.equal(amountLP1);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(32), DELTA);
 
@@ -564,15 +564,15 @@ describe("AccruedLPToken", function () {
             );
 
             const amountLP2 = await pools[2].getAmountLP(ONE);
-            await pools[2].alpToken.connect(alice).unstake(ONE, alice.address);
+            await pools[2].alpToken.connect(alice).withdraw(ONE, alice.address);
             expect(await pools[2].lpToken.balanceOf(alice.address)).to.be.equal(amountLP2);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(56), DELTA);
         });
     });
 
-    describe("#unstake()", function () {
-        it("should unstake gradually", async function () {
-            const { alice, tokens, sushi, createAccruedLPToken, getStakeParameters } = await setupTest();
+    describe("#withdraw()", function () {
+        it("should withdraw gradually", async function () {
+            const { alice, tokens, sushi, createAccruedLPToken, getDepositParameters } = await setupTest();
 
             // add SUSHI-WETH pool
             const { pid, lpToken } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
@@ -583,9 +583,9 @@ describe("AccruedLPToken", function () {
             await sushi.addLiquidity(alice, tokens.sushi, tokens.weth, ONE.mul(3).add(1000), ONE.mul(3).add(1000));
 
             await lpToken.connect(alice).approve(alpToken.address, constants.MaxUint256);
-            const params = await getStakeParameters(lpToken, ONE.mul(3), alice);
+            const params = await getDepositParameters(lpToken, ONE.mul(3), alice);
             const shares = params[3];
-            await alpToken.connect(alice).stake(...params);
+            await alpToken.connect(alice).deposit(...params);
 
             await mineBlocks(2);
             expect(await alpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
@@ -593,7 +593,7 @@ describe("AccruedLPToken", function () {
                 DELTA
             );
 
-            await alpToken.connect(alice).unstake(shares.div(3), alice.address);
+            await alpToken.connect(alice).withdraw(shares.div(3), alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.approximately(ONE.mul(1), DELTA);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK, DELTA);
             expect(await alpToken.withdrawableYieldOf(alice.address)).to.be.approximately(
@@ -611,7 +611,7 @@ describe("AccruedLPToken", function () {
                 DELTA
             );
 
-            await alpToken.connect(alice).unstake(shares.div(3), alice.address);
+            await alpToken.connect(alice).withdraw(shares.div(3), alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.approximately(ONE.mul(2), DELTA);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(3), DELTA);
             expect(await alpToken.balanceOf(alice.address)).to.be.approximately(
@@ -625,14 +625,14 @@ describe("AccruedLPToken", function () {
                 DELTA
             );
 
-            await alpToken.connect(alice).unstake(shares.div(3), alice.address);
+            await alpToken.connect(alice).withdraw(shares.div(3), alice.address);
             expect(await lpToken.balanceOf(alice.address)).to.be.approximately(ONE.mul(3), DELTA);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(7), DELTA);
             expect(await alpToken.balanceOf(alice.address)).to.be.approximately(0, DELTA);
         });
 
-        it("should unstake as SushiBar's balance increases for 1 account", async function () {
-            const { alice, tokens, sushi, createAccruedLPToken, getStakeParameters } = await setupTest();
+        it("should withdraw as SushiBar's balance increases for 1 account", async function () {
+            const { alice, tokens, sushi, createAccruedLPToken, getDepositParameters } = await setupTest();
 
             // 100 xSUSHI minted (100 xSUSHI => 100 SUSHI)
             await tokens.sushi.approve(sushi.bar.address, constants.MaxUint256);
@@ -649,9 +649,9 @@ describe("AccruedLPToken", function () {
             await sushi.addLiquidity(alice, tokens.sushi, tokens.weth, ONE.mul(3).add(1000), ONE.mul(3).add(1000));
 
             await lpToken.connect(alice).approve(alpToken.address, constants.MaxUint256);
-            const params = await getStakeParameters(lpToken, ONE.mul(3), alice);
+            const params = await getDepositParameters(lpToken, ONE.mul(3), alice);
             const shares = params[3];
-            await alpToken.connect(alice).stake(...params);
+            await alpToken.connect(alice).deposit(...params);
 
             // 300 SUSHI sent to SushiBar (100 xSUSHI => 400 SUSHI)
             await tokens.sushi.transfer(sushi.bar.address, SUSHI_PER_BLOCK.mul(3));
@@ -669,7 +669,7 @@ describe("AccruedLPToken", function () {
 
             // 1. deposit 400 SUSHI into SushiBar (200 xSUSHI => 800 SUSHI; 100 xSUSHI for alice)
             // 2. withdraw 50 xSUSHI (150 xSUSHI => 600 SUSHI; 50 xSUSHI for alice)
-            await alpToken.connect(alice).unstake(shares.div(2), alice.address);
+            await alpToken.connect(alice).withdraw(shares.div(2), alice.address);
             expect(await sushi.bar.totalSupply()).to.be.approximately(SUSHI_PER_BLOCK.mul(3).div(2), DELTA);
             expect(await tokens.sushi.balanceOf(sushi.bar.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(6), DELTA);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(2), DELTA);
@@ -684,7 +684,7 @@ describe("AccruedLPToken", function () {
 
             // 1. deposit 200 SUSHI into SushiBar (200 xSUSHI => 800 SUSHI; 100 xSUSHI for alice)
             // 2. withdraw 50 xSUSHI (150 xSUSHI => 600 SUSHI; 50 xSUSHI for alice)
-            await alpToken.connect(alice).unstake(shares.div(4), alice.address);
+            await alpToken.connect(alice).withdraw(shares.div(4), alice.address);
             expect(await sushi.bar.totalSupply()).to.be.approximately(SUSHI_PER_BLOCK.mul(3).div(2), DELTA);
             expect(await tokens.sushi.balanceOf(sushi.bar.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(6), DELTA);
             expect(await tokens.sushi.balanceOf(alice.address)).to.be.approximately(SUSHI_PER_BLOCK.mul(4), DELTA);

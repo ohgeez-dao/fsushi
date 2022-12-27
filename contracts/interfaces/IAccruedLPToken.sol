@@ -9,9 +9,10 @@ interface IAccruedLPToken is IERC20 {
     error InsufficientYield();
     error InsufficientAmount();
 
-    event Stake(uint256 shares, uint256 amountLP, address indexed beneficiary);
-    event Unstake(uint256 shares, uint256 amountLP, address indexed beneficiary);
-    event WithdrawSushi(uint256 shares, uint256 yield, address indexed beneficiary);
+    event Deposit(uint256 shares, uint256 amountLP, address indexed beneficiary);
+    event Withdraw(uint256 shares, uint256 amountLP, address indexed beneficiary);
+    event EmergencyWithdraw(uint256 shares, uint256 amountLP, address indexed beneficiary);
+    event ClaimSushi(uint256 shares, uint256 yield, address indexed beneficiary);
 
     function initialize(
         address _router,
@@ -49,7 +50,7 @@ interface IAccruedLPToken is IERC20 {
 
     function approveMax() external;
 
-    function stakeSigned(
+    function depositSigned(
         uint256 amountLP,
         address[] calldata path0,
         address[] calldata path1,
@@ -61,7 +62,7 @@ interface IAccruedLPToken is IERC20 {
         bytes32 s
     ) external;
 
-    function stake(
+    function deposit(
         uint256 amountLP,
         address[] calldata path0,
         address[] calldata path1,
@@ -70,7 +71,7 @@ interface IAccruedLPToken is IERC20 {
         uint256 deadline
     ) external;
 
-    function stakeWithSushi(
+    function depositWithSushi(
         uint256 amount,
         address[] calldata path0,
         address[] calldata path1,
@@ -79,7 +80,9 @@ interface IAccruedLPToken is IERC20 {
         uint256 deadline
     ) external;
 
-    function unstake(uint256 shares, address beneficiary) external;
+    function withdraw(uint256 shares, address beneficiary) external;
+
+    function emergencyWithdraw(address beneficiary) external;
 
     function checkpoint() external;
 }

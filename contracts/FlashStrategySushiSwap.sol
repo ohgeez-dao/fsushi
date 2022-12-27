@@ -161,7 +161,7 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
         IFlashFToken(fToken).burnFrom(msg.sender, _amount);
 
         address _alpToken = alpToken;
-        IAccruedLPToken(_alpToken).unstake(yield, address(this));
+        IAccruedLPToken(_alpToken).withdraw(yield, address(this));
 
         address lpToken = IAccruedLPToken(_alpToken).lpToken();
         uint256 balanceLPToken = IERC20(lpToken).balanceOf(address(this));
