@@ -12,7 +12,7 @@ contract FSushiKitchen is Ownable, IFSushiKitchen {
 
     uint256 internal constant BASE = 1e18;
 
-    address public immutable flashStrategyFactory;
+    address public immutable override flashStrategyFactory;
 
     Snapshots.Snapshot[] internal _totalWeightPoints;
     mapping(uint256 => Snapshots.Snapshot[]) internal _weightPoints; // pid -> snapshots
@@ -71,6 +71,8 @@ contract FSushiKitchen is Ownable, IFSushiKitchen {
     }
 
     function updateWeight(uint256 pid, uint256 points) external override onlyOwner {
+        if (_weightPoints[pid].size() == 0) revert InvalidPid();
+
         _updateWeight(pid, points);
     }
 

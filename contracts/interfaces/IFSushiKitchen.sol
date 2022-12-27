@@ -8,6 +8,8 @@ interface IFSushiKitchen {
     event AddPool(uint256 indexed pid);
     event UpdateWeight(uint256 indexed pid, uint256 weightPoints, uint256 totalWeightPoints);
 
+    function flashStrategyFactory() external view returns (address);
+
     function totalWeightPointsLength() external view returns (uint256);
 
     function weightPointsLength(uint256 pid) external view returns (uint256);
