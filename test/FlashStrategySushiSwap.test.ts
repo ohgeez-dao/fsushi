@@ -1,21 +1,13 @@
 import { ethers } from "hardhat";
 import { constants } from "ethers";
 import { assert, expect } from "chai";
-import {
-    FarmingLPTokenFactory,
-    FarmingLPToken__factory,
-    FlashFToken__factory,
-    UniswapV2Pair__factory,
-    SushiBarVault,
-    FlashStrategySushiSwapFactory,
-    FlashStrategySushiSwap__factory,
-    FeeVault,
-} from "../typechain-types";
+import { UniswapV2Pair__factory, FeeVault } from "../typechain-types";
 import setupSushiswap, { SUSHI_PER_BLOCK } from "./utils/setupSushiswap";
 import setupTokens from "./utils/setupTokens";
 import addressEquals from "./utils/addressEquals";
 import now from "./utils/now";
 import setupFlashStake from "./utils/setupFlashStake";
+import setupPeripherals from "./utils/setupPeripherals";
 
 const ONE = ethers.constants.WeiPerEther;
 const YEAR = 365 * 24 * 3600;
@@ -29,50 +21,12 @@ const setupTest = async feeRecipient => {
     const flash = await setupFlashStake();
     const [deployer, alice, bob, carol] = await ethers.getSigners();
 
-    const SBVault = await ethers.getContractFactory("SushiBarVault");
-    const sbVault = (await SBVault.deploy(tokens.sushi.address, sushi.bar.address)) as SushiBarVault;
-
-    const FLPFactory = await ethers.getContractFactory("FarmingLPTokenFactory");
-    const flpFactory = (await FLPFactory.deploy(
-        sushi.router.address,
-        sushi.chef.address,
-        sbVault.address
-    )) as FarmingLPTokenFactory;
-
-    const Factory = await ethers.getContractFactory("FlashStrategySushiSwapFactory");
-    const factory = (await Factory.deploy(
-        flash.protocol.address,
-        flpFactory.address,
-        feeRecipient.address
-    )) as FlashStrategySushiSwapFactory;
-
-    const createFlashStrategySushiSwap = async (token0, token1, allocPoint) => {
-        const { pid, lpToken } = await sushi.addPool(token0, token1, allocPoint);
-        await factory.createFlashStrategySushiSwap(pid);
-
-        const strategy = FlashStrategySushiSwap__factory.connect(
-            await factory.getFlashStrategySushiSwap(pid),
-            ethers.provider
-        );
-        const flpToken = FarmingLPToken__factory.connect(await strategy.flpToken(), ethers.provider);
-
-        await flash.protocol.registerStrategy(
-            strategy.address,
-            flpToken.address,
-            "FlashStrategySushiSwap " + (await flpToken.name()),
-            "f" + (await flpToken.symbol()) + "-" + flpToken.address.substring(2, 6)
-        );
-
-        const fToken = FlashFToken__factory.connect(await strategy.fToken(), ethers.provider);
-
-        return {
-            pid,
-            lpToken,
-            flpToken,
-            strategy,
-            fToken,
-        };
-    };
+    const { sbVault, flpFactory, createFlashStrategySushiSwap } = await setupPeripherals(
+        tokens,
+        sushi,
+        flash,
+        feeRecipient
+    );
 
     const findPathToSushi = async tokenAddressIn => {
         if (addressEquals(tokenAddressIn, tokens.sushi.address)) {

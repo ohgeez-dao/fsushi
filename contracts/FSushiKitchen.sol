@@ -61,13 +61,13 @@ contract FSushiKitchen is Ownable, IFSushiKitchen {
         return (points * BASE) / totalPoints;
     }
 
-    function addPool(uint256 pid) external override {
+    function addPool(uint256 pid, uint256 points) external override {
         address strategy = IFlashStrategySushiSwapFactory(flashStrategyFactory).getFlashStrategySushiSwap(pid);
         if (strategy == address(0)) revert InvalidPid();
 
         emit AddPool(pid);
 
-        _updateWeight(pid, BASE);
+        _updateWeight(pid, points);
     }
 
     function updateWeight(uint256 pid, uint256 points) external override onlyOwner {

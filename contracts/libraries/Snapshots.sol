@@ -21,7 +21,7 @@ library Snapshots {
 
     function valueAt(Snapshot[] storage snapshots, uint256 timestamp) internal view returns (uint256) {
         uint256 _now = block.timestamp;
-        if (_now <= timestamp) revert InvalidTimestamp();
+        if (_now < timestamp) revert InvalidTimestamp();
 
         uint256 _length = snapshots.length;
         if (_length == 0) {
