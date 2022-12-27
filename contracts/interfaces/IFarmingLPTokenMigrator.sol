@@ -17,6 +17,7 @@ interface IFarmingLPTokenMigrator {
         address lpToken,
         uint256 shares,
         uint256 amountLP,
-        address beneficiary
+        address beneficiary,
+        bytes calldata params
     ) external;
 }

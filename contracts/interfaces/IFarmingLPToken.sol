@@ -87,9 +87,9 @@ interface IFarmingLPToken is IERC20 {
 
     function emergencyWithdraw(address beneficiary) external;
 
-    function migrate(address beneficiary) external;
+    function migrate(address beneficiary, bytes calldata params) external;
 
-    function emergencyMigrate(address beneficiary) external;
+    function emergencyMigrate(address beneficiary, bytes calldata params) external;
 
     function checkpoint() external;
 }

@@ -307,7 +307,7 @@ contract FarmingLPToken is BaseERC20, ReentrancyGuard, IFarmingLPToken {
     /**
      * @dev migrate to a new version of fLP
      */
-    function migrate(address beneficiary) external nonReentrant {
+    function migrate(address beneficiary, bytes calldata params) external nonReentrant {
         address migrator = IFarmingLPTokenFactory(factory).migrator();
         if (migrator == address(0)) revert NoMigratorSet();
 
@@ -322,7 +322,7 @@ contract FarmingLPToken is BaseERC20, ReentrancyGuard, IFarmingLPToken {
 
         address _lpToken = lpToken;
         IERC20(_lpToken).approve(migrator, amountLP);
-        IFarmingLPTokenMigrator(migrator).onMigrate(msg.sender, pid, _lpToken, shares, amountLP, beneficiary);
+        IFarmingLPTokenMigrator(migrator).onMigrate(msg.sender, pid, _lpToken, shares, amountLP, beneficiary, params);
 
         emit Migrate(shares, amountLP, beneficiary);
     }
@@ -330,7 +330,7 @@ contract FarmingLPToken is BaseERC20, ReentrancyGuard, IFarmingLPToken {
     /**
      * @dev migrate to a new version of fLP without caring about rewards. EMERGENCY ONLY
      */
-    function emergencyMigrate(address beneficiary) external nonReentrant {
+    function emergencyMigrate(address beneficiary, bytes calldata params) external nonReentrant {
         address migrator = IFarmingLPTokenFactory(factory).migrator();
         if (migrator == address(0)) revert NoMigratorSet();
 
@@ -343,7 +343,7 @@ contract FarmingLPToken is BaseERC20, ReentrancyGuard, IFarmingLPToken {
 
         address _lpToken = lpToken;
         IERC20(_lpToken).approve(migrator, amountLP);
-        IFarmingLPTokenMigrator(migrator).onMigrate(msg.sender, pid, _lpToken, shares, amountLP, beneficiary);
+        IFarmingLPTokenMigrator(migrator).onMigrate(msg.sender, pid, _lpToken, shares, amountLP, beneficiary, params);
 
         emit EmergencyMigrate(shares, amountLP, beneficiary);
     }
