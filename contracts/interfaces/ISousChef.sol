@@ -6,11 +6,11 @@ interface ISousChef {
     error TooEarly();
     error InvalidPid();
     error InvalidFSushiVault();
-    error InvalidFSushiController();
+    error InvalidFSushiKitchen();
     error NoClaimableRewards();
 
     event UpdateFSushiVault(address indexed fSushiVault);
-    event UpdateFSushiController(address indexed fSushiController);
+    event UpdateFSushiKitchen(address indexed fSushiKitchen);
     event Deposit(uint256 indexed pid, uint256 amount, address indexed beneficiary);
     event Withdraw(uint256 indexed pid, uint256 amount, address indexed beneficiary);
     event Checkpoint(uint256 indexed pid);
@@ -35,7 +35,7 @@ interface ISousChef {
 
     function vault() external view returns (address);
 
-    function controller() external view returns (address);
+    function kitchen() external view returns (address);
 
     function weeklyRewards(uint256 time) external view returns (uint256);
 
@@ -65,7 +65,7 @@ interface ISousChef {
 
     function updateFSushiVault(address _fSushiVault) external;
 
-    function updateFSushiController(address _fSushiController) external;
+    function updateFSushiKitchen(address _fSushiKitchen) external;
 
     function deposit(
         uint256 pid,

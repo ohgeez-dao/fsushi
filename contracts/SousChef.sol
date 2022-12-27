@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/ISousChef.sol";
 import "./interfaces/IFSushiVault.sol";
-import "./interfaces/IFSushiController.sol";
+import "./interfaces/IFSushiKitchen.sol";
 import "./interfaces/IFSushi.sol";
 import "./interfaces/IFlashStrategySushiSwapFactory.sol";
 import "./interfaces/IFlashStrategySushiSwap.sol";
@@ -36,9 +36,9 @@ contract SousChef is Ownable, ISousChef {
     address public override vault;
 
     /**
-     * @notice address of IFSushiController
+     * @notice address of IFSushiKitchen
      */
-    address public override controller;
+    address public override kitchen;
 
     /**
      * @notice how much rewards to be minted at the week
@@ -82,12 +82,12 @@ contract SousChef is Ownable, ISousChef {
     constructor(
         address _fSushi,
         address _vault,
-        address _controller,
+        address _kitchen,
         address _flashStrategyFactory
     ) {
         fSushi = _fSushi;
         vault = _vault;
-        controller = _controller;
+        kitchen = _kitchen;
         flashStrategyFactory = _flashStrategyFactory;
         uint256 week = block.timestamp.toWeekNumber() + 1;
         startWeek = week;
@@ -103,12 +103,12 @@ contract SousChef is Ownable, ISousChef {
         emit UpdateFSushiVault(_fSushiVault);
     }
 
-    function updateFSushiController(address _fSushiController) external override onlyOwner {
-        if (_fSushiController == address(0)) revert InvalidFSushiController();
+    function updateFSushiKitchen(address _fSushiKitchen) external override onlyOwner {
+        if (_fSushiKitchen == address(0)) revert InvalidFSushiKitchen();
 
-        controller = _fSushiController;
+        kitchen = _fSushiKitchen;
 
-        emit UpdateFSushiController(_fSushiController);
+        emit UpdateFSushiKitchen(_fSushiKitchen);
     }
 
     function deposit(
@@ -287,6 +287,9 @@ contract SousChef is Ownable, ISousChef {
             prevWeek = startWeek.toTimestamp();
         }
 
+        address _kitchen = kitchen;
+        IFSushiKitchen(_kitchen).checkpoint(pid);
+
         // add week-by-week rewards until the last week
         uint256 totalRewards;
         uint256 from = prevWeek.toWeekNumber();
@@ -294,7 +297,7 @@ contract SousChef is Ownable, ISousChef {
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
             if (to <= week) break;
-            uint256 weight = IFSushiController(controller).relativeWeightAt(pid, week);
+            uint256 weight = IFSushiKitchen(_kitchen).relativeWeightAt(pid, week.toTimestamp());
             uint256 rewards = (weeklyRewards[week] * weight * userPoints[pid][msg.sender][week]) /
                 points[pid][week] /
                 1e18;
