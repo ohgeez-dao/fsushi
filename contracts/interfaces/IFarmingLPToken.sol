@@ -8,11 +8,14 @@ interface IFarmingLPToken is IERC20 {
     error InvalidPath();
     error InsufficientYield();
     error InsufficientAmount();
+    error NoMigratorSet();
 
     event Deposit(uint256 shares, uint256 amountLP, address indexed beneficiary);
     event Withdraw(uint256 shares, uint256 amountLP, address indexed beneficiary);
     event EmergencyWithdraw(uint256 shares, uint256 amountLP, address indexed beneficiary);
     event ClaimSushi(uint256 shares, uint256 yield, address indexed beneficiary);
+    event Migrate(uint256 shares, uint256 amountLP, address indexed beneficiary);
+    event EmergencyMigrate(uint256 shares, uint256 amountLP, address indexed beneficiary);
 
     function initialize(
         address _router,
@@ -83,6 +86,10 @@ interface IFarmingLPToken is IERC20 {
     function withdraw(uint256 shares, address beneficiary) external;
 
     function emergencyWithdraw(address beneficiary) external;
+
+    function migrate(address beneficiary) external;
+
+    function emergencyMigrate(address beneficiary) external;
 
     function checkpoint() external;
 }

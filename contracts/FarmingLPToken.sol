@@ -11,6 +11,7 @@ import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IFarmingLPToken.sol";
 import "./interfaces/IFarmingLPTokenFactory.sol";
+import "./interfaces/IFarmingLPTokenMigrator.sol";
 import "./interfaces/IMasterChef.sol";
 import "./libraries/UniswapV2Utils.sol";
 import "./base/BaseERC20.sol";
@@ -301,6 +302,50 @@ contract FarmingLPToken is BaseERC20, ReentrancyGuard, IFarmingLPToken {
         withdrawableTotalLPs -= amountLP;
 
         emit EmergencyWithdraw(shares, amountLP, beneficiary);
+    }
+
+    /**
+     * @dev migrate to a new version of fLP
+     */
+    function migrate(address beneficiary) external nonReentrant {
+        address migrator = IFarmingLPTokenFactory(factory).migrator();
+        if (migrator == address(0)) revert NoMigratorSet();
+
+        uint256 shares = sharesOf(msg.sender);
+        uint256 amountLP = (shares * withdrawableTotalLPs) / totalShares();
+        IMasterChef(masterChef).withdraw(pid, amountLP);
+
+        _claimSushi(shares, beneficiary);
+
+        _burn(msg.sender, shares);
+        withdrawableTotalLPs -= amountLP;
+
+        address _lpToken = lpToken;
+        IERC20(_lpToken).approve(migrator, amountLP);
+        IFarmingLPTokenMigrator(migrator).onMigrate(msg.sender, pid, _lpToken, shares, amountLP, beneficiary);
+
+        emit Migrate(shares, amountLP, beneficiary);
+    }
+
+    /**
+     * @dev migrate to a new version of fLP without caring about rewards. EMERGENCY ONLY
+     */
+    function emergencyMigrate(address beneficiary) external nonReentrant {
+        address migrator = IFarmingLPTokenFactory(factory).migrator();
+        if (migrator == address(0)) revert NoMigratorSet();
+
+        uint256 shares = sharesOf(msg.sender);
+        uint256 amountLP = (shares * withdrawableTotalLPs) / totalShares();
+        IMasterChef(masterChef).withdraw(pid, amountLP);
+
+        _burn(msg.sender, shares);
+        withdrawableTotalLPs -= amountLP;
+
+        address _lpToken = lpToken;
+        IERC20(_lpToken).approve(migrator, amountLP);
+        IFarmingLPTokenMigrator(migrator).onMigrate(msg.sender, pid, _lpToken, shares, amountLP, beneficiary);
+
+        emit EmergencyMigrate(shares, amountLP, beneficiary);
     }
 
     /**

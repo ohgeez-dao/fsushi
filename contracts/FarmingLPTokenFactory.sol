@@ -13,6 +13,7 @@ contract FarmingLPTokenFactory is Ownable, IFarmingLPTokenFactory {
     address internal immutable _implementation;
 
     address public override yieldVault;
+    address public override migrator;
     mapping(uint256 => address) public override getFarmingLPToken;
 
     constructor(
@@ -36,6 +37,13 @@ contract FarmingLPTokenFactory is Ownable, IFarmingLPTokenFactory {
         yieldVault = vault;
 
         emit UpdateVault(vault);
+    }
+
+    function updateMigrator(address _migrator) external override onlyOwner {
+        if (_migrator != address(0)) revert MigratorSet();
+        migrator = _migrator;
+
+        emit UpdateMigrator(_migrator);
     }
 
     function createFarmingLPToken(uint256 pid) external override returns (address token) {
