@@ -13,17 +13,17 @@ fSUSHI is a protocol built on top of [FlashStake](http://flashstake.io/) and [Su
                                                                                 ▲        │
                                                                          fToken │        │ fSUSHI
                                                                                 │        ▼
-                                                                         ╔══════╧════════════╗ aLP Token   ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐             ┌───────────────────┐
-                                                                         ║                   ╟────────────►┤                   │ aLP Token   │                   │
+                                                                         ╔══════╧════════════╗ fLP Token   ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐             ┌───────────────────┐
+                                                                         ║                   ╟────────────►┤                   │ fLP Token   │                   │
                                                                          ║       User        ║             │   FlashProtocol   ├────────────►│   FlashStrategy   │
                                                                          ║                   ║◄────────────┤                   │             │     SushiSwap     │
                                                                          ╚══════════════╤════╝   fToken    └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘             └───────────────────┘
                                                                                ▲        │
-                                                                      aLP Token│        │ SLP Token
+                                                                      fLP Token│        │ SLP Token
                                                                                │        ▼
  ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐ invest SUSHI  ┌───────────────────┐  SUSHI yield  ┌─────┴─────────────┐
  │  AAVE SUSHI pool  │◄──────────────┤                   │◄──────────────┤                   │
- │        or         │               │   SushiBarVault   │               │  AccruedLPToken   │
+ │        or         │               │   SushiBarVault   │               │  FarmingLPToken   │
  │    xSUSHI etc.    ├──────────────►│                   ├──────────────►│                   │
  └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘ accrued SUSHI └───────────────────┘ accrued SUSHI └──────────────┬────┘
                                                                                ▲        │
@@ -38,13 +38,13 @@ fSUSHI is a protocol built on top of [FlashStake](http://flashstake.io/) and [Su
 
 ## Contracts
 
-### AccruedLPToken
+### FarmingLPToken
 
-You can deposit SushiSwap LP tokens and get the equivalent amount of `aLP` tokens. The difference from the original LP tokens is that the _SUSHI_ yield is automatically accrued to your `aLP` balance. Also, pending _SUSHI_ yield is being optimized by the dynamic strategies to get higher profits.
+You can deposit SushiSwap LP tokens and get the equivalent amount of `fLP` tokens. The difference from the original LP tokens is that the _SUSHI_ yield is automatically accrued to your `fLP` balance. Also, pending _SUSHI_ yield is being optimized by the dynamic strategies to get higher profits.
 
 ### FlashStrategySushiSwap
 
-A FlashStake strategy to enable `AccruedLPToken`s to be used as principal and stakers get instant, upfront _SUSHI_ yield.
+A FlashStake strategy to enable `FarmingLPToken`s to be used as principal and stakers get instant, upfront _SUSHI_ yield.
 You can also stake without instant yield and in this case you get `fToken`s that are minted from FlashStake protocol.
 
 ### SousChef

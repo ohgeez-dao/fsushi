@@ -2,8 +2,8 @@ import { ethers } from "hardhat";
 import { constants } from "ethers";
 import { assert, expect } from "chai";
 import {
-    AccruedLPTokenFactory,
-    AccruedLPToken__factory,
+    FarmingLPTokenFactory,
+    FarmingLPToken__factory,
     FlashFTokenFactory,
     FlashProtocol,
     FlashNFT,
@@ -33,12 +33,12 @@ const setupTest = async feeRecipient => {
     const SBVault = await ethers.getContractFactory("SushiBarVault");
     const sbVault = (await SBVault.deploy(tokens.sushi.address, sushi.bar.address)) as SushiBarVault;
 
-    const ALPFactory = await ethers.getContractFactory("AccruedLPTokenFactory");
-    const alpFactory = (await ALPFactory.deploy(
+    const ALPFactory = await ethers.getContractFactory("FarmingLPTokenFactory");
+    const flpFactory = (await ALPFactory.deploy(
         sushi.router.address,
         sushi.chef.address,
         sbVault.address
-    )) as AccruedLPTokenFactory;
+    )) as FarmingLPTokenFactory;
 
     const FlashFactory = await ethers.getContractFactory("FlashFTokenFactory");
     const flashFactory = (await FlashFactory.deploy()) as FlashFTokenFactory;
@@ -53,7 +53,7 @@ const setupTest = async feeRecipient => {
     const Factory = await ethers.getContractFactory("FlashStrategySushiSwapFactory");
     const factory = (await Factory.deploy(
         flashProtocol.address,
-        alpFactory.address,
+        flpFactory.address,
         feeRecipient.address
     )) as FlashStrategySushiSwapFactory;
 
@@ -65,13 +65,13 @@ const setupTest = async feeRecipient => {
             await factory.getFlashStrategySushiSwap(pid),
             ethers.provider
         );
-        const alpToken = AccruedLPToken__factory.connect(await sousChef.alpToken(), ethers.provider);
+        const flpToken = FarmingLPToken__factory.connect(await sousChef.flpToken(), ethers.provider);
 
         await flashProtocol.registerStrategy(
             sousChef.address,
-            alpToken.address,
-            "FlashStrategySushiSwap " + (await alpToken.name()),
-            "f" + (await alpToken.symbol()) + "-" + alpToken.address.substring(2, 6)
+            flpToken.address,
+            "FlashStrategySushiSwap " + (await flpToken.name()),
+            "f" + (await flpToken.symbol()) + "-" + flpToken.address.substring(2, 6)
         );
 
         const fToken = FlashFToken__factory.connect(await sousChef.fToken(), ethers.provider);
@@ -79,7 +79,7 @@ const setupTest = async feeRecipient => {
         return {
             pid,
             lpToken,
-            alpToken,
+            flpToken,
             sousChef,
             fToken,
         };
@@ -129,8 +129,8 @@ const setupTest = async feeRecipient => {
         return [amountLP, path0, path1, amount, beneficiary.address, (await now()) + 60] as const;
     };
 
-    const mintSLP = async (account, alpToken, amountToken) => {
-        const lpToken = UniswapV2Pair__factory.connect(await alpToken.lpToken(), ethers.provider);
+    const mintSLP = async (account, flpToken, amountToken) => {
+        const lpToken = UniswapV2Pair__factory.connect(await flpToken.lpToken(), ethers.provider);
 
         if ((await lpToken.totalSupply()).isZero()) {
             amountToken = amountToken.add(1000);
@@ -140,9 +140,9 @@ const setupTest = async feeRecipient => {
         await sushi.addLiquidity(account, tokens.sushi, tokens.weth, amountToken, amountToken);
 
         const amountLP = await lpToken.balanceOf(account.address);
-        await lpToken.connect(account).approve(alpToken.address, constants.MaxUint256);
+        await lpToken.connect(account).approve(flpToken.address, constants.MaxUint256);
         const params = await getStakeParameters(lpToken, amountLP, account);
-        await alpToken.connect(account).deposit(...params);
+        await flpToken.connect(account).deposit(...params);
         return params[3];
     };
 
@@ -154,7 +154,7 @@ const setupTest = async feeRecipient => {
         tokens,
         sushi,
         sbVault,
-        alpFactory,
+        flpFactory,
         flashFactory,
         flashNFT,
         flashProtocol,
@@ -170,26 +170,26 @@ describe("FlashStrategySushiSwap", function () {
 
         const { alice, tokens, flashProtocol, createFlashStrategySushiSwap, mintSLP } = await setupTest(feeVault);
 
-        // add SUSHI-WETH pool, alpToken and sousChef
-        const { sousChef, alpToken, fToken } = await createFlashStrategySushiSwap(tokens.sushi, tokens.weth, 100);
+        // add SUSHI-WETH pool, flpToken and sousChef
+        const { sousChef, flpToken, fToken } = await createFlashStrategySushiSwap(tokens.sushi, tokens.weth, 100);
 
         const amount = ONE.mul(100);
-        const amountLP = await mintSLP(alice, alpToken, amount);
-        expect(await alpToken.balanceOf(alice.address)).to.be.equal(amountLP);
+        const amountLP = await mintSLP(alice, flpToken, amount);
+        expect(await flpToken.balanceOf(alice.address)).to.be.equal(amountLP);
 
-        await alpToken.connect(alice).approve(flashProtocol.address, constants.MaxUint256);
+        await flpToken.connect(alice).approve(flashProtocol.address, constants.MaxUint256);
         // 100 SUSHI is pending
-        expect(await alpToken.balanceOf(alice.address)).to.be.approximately(amountLP.add(SUSHI_PER_BLOCK), DELTA);
+        expect(await flpToken.balanceOf(alice.address)).to.be.approximately(amountLP.add(SUSHI_PER_BLOCK), DELTA);
 
         // stake all SLP (staked LP amount + 200 pending SUSHI)
         const amountSLP = amountLP.add(SUSHI_PER_BLOCK.mul(2));
         await flashProtocol.connect(alice).stake(sousChef.address, amountSLP, YEAR, alice.address, false);
-        expect(await alpToken.balanceOf(alice.address)).to.be.equal(0);
-        expect(await alpToken.balanceOf(sousChef.address)).to.be.approximately(
+        expect(await flpToken.balanceOf(alice.address)).to.be.equal(0);
+        expect(await flpToken.balanceOf(sousChef.address)).to.be.approximately(
             amountSLP.sub(fee(amountSLP, 25)),
             DELTA
         );
-        expect(await alpToken.balanceOf(feeVault.address)).to.be.approximately(fee(amountSLP, 25), DELTA);
+        expect(await flpToken.balanceOf(feeVault.address)).to.be.approximately(fee(amountSLP, 25), DELTA);
         expect(await fToken.balanceOf(alice.address)).to.be.approximately(amountSLP, DELTA);
     });
 });

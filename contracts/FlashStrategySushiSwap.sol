@@ -9,8 +9,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IFlashStrategySushiSwap.sol";
 import "./interfaces/IFlashStrategySushiSwapFactory.sol";
 import "./interfaces/IFlashFToken.sol";
-import "./interfaces/IAccruedLPTokenFactory.sol";
-import "./interfaces/IAccruedLPToken.sol";
+import "./interfaces/IFarmingLPTokenFactory.sol";
+import "./interfaces/IFarmingLPToken.sol";
 import "./interfaces/IERC20Receiver.sol";
 
 contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrategySushiSwap {
@@ -28,9 +28,9 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
      */
     address public override sushi;
     /**
-     * @notice address of AccruedLPToken
+     * @notice address of FarmingLPToken
      */
-    address public override alpToken;
+    address public override flpToken;
 
     uint256 internal _balancePrincipal;
 
@@ -41,18 +41,18 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
 
     function initialize(
         address _flashProtocol,
-        address _alpTokenFactory,
+        address _flpTokenFactory,
         uint256 _pid
     ) external override initializer {
         if (_flashProtocol == address(0)) revert InvalidFlashProtocol();
 
-        address _alpToken = IAccruedLPTokenFactory(_alpTokenFactory).getAccruedLPToken(_pid);
-        if (_alpToken == address(0)) _alpToken = IAccruedLPTokenFactory(_alpTokenFactory).createAccruedLPToken(_pid);
+        address _flpToken = IFarmingLPTokenFactory(_flpTokenFactory).getFarmingLPToken(_pid);
+        if (_flpToken == address(0)) _flpToken = IFarmingLPTokenFactory(_flpTokenFactory).createFarmingLPToken(_pid);
 
         factory = msg.sender;
         flashProtocol = _flashProtocol;
-        sushi = IAccruedLPToken(_alpToken).sushi();
-        alpToken = _alpToken;
+        sushi = IFarmingLPToken(_flpToken).sushi();
+        flpToken = _flpToken;
     }
 
     modifier onlyAuthorised() {
@@ -71,14 +71,14 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
      * @return amount of yield tokens that can be rewarded in SUSHI
      */
     function getYieldBalance() public view override returns (uint256) {
-        return IAccruedLPToken(alpToken).withdrawableYieldOf(address(this));
+        return IFarmingLPToken(flpToken).withdrawableYieldOf(address(this));
     }
 
     /**
      * @return address of LP Token
      */
     function getPrincipalAddress() external view override returns (address) {
-        return alpToken;
+        return flpToken;
     }
 
     /**
@@ -127,7 +127,7 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
      */
     function depositPrincipal(uint256 _amount) external override onlyAuthorised returns (uint256) {
         uint256 fee = _amount / 400; // charge 0.25%
-        _transferFee(alpToken, fee);
+        _transferFee(flpToken, fee);
 
         uint256 amount = _amount - fee;
         _balancePrincipal += amount;
@@ -139,10 +139,10 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
      * @notice This function should withdraw principal from the underlying strategy.
      */
     function withdrawPrincipal(uint256 _amount) external override onlyAuthorised {
-        address _alpToken = alpToken;
-        IAccruedLPToken(_alpToken).checkpoint();
+        address _flpToken = flpToken;
+        IFarmingLPToken(_flpToken).checkpoint();
 
-        IERC20(_alpToken).safeTransfer(msg.sender, _amount);
+        IERC20(_flpToken).safeTransfer(msg.sender, _amount);
         _balancePrincipal -= _amount;
     }
 
@@ -160,10 +160,10 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
 
         IFlashFToken(fToken).burnFrom(msg.sender, _amount);
 
-        address _alpToken = alpToken;
-        IAccruedLPToken(_alpToken).withdraw(yield, address(this));
+        address _flpToken = flpToken;
+        IFarmingLPToken(_flpToken).withdraw(yield, address(this));
 
-        address lpToken = IAccruedLPToken(_alpToken).lpToken();
+        address lpToken = IFarmingLPToken(_flpToken).lpToken();
         uint256 balanceLPToken = IERC20(lpToken).balanceOf(address(this));
         _transfer(lpToken, _yieldTo, balanceLPToken);
 

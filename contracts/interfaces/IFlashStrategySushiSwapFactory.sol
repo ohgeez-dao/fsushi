@@ -14,7 +14,7 @@ interface IFlashStrategySushiSwapFactory {
 
     function flashProtocol() external view returns (address);
 
-    function alpTokenFactory() external view returns (address);
+    function flpTokenFactory() external view returns (address);
 
     function feeRecipient() external view returns (address);
 

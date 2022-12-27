@@ -2,8 +2,8 @@ import { ethers } from "hardhat";
 import { constants } from "ethers";
 import { expect } from "chai";
 import {
-    AccruedLPTokenFactory,
-    AccruedLPToken__factory,
+    FarmingLPTokenFactory,
+    FarmingLPToken__factory,
     FlashFTokenFactory,
     FlashProtocol,
     FlashNFT,
@@ -24,12 +24,12 @@ const setupTest = async feeRecipient => {
     const SBVault = await ethers.getContractFactory("SushiBarVault");
     const sbVault = (await SBVault.deploy(tokens.sushi.address, sushi.bar.address)) as SushiBarVault;
 
-    const ALPFactory = await ethers.getContractFactory("AccruedLPTokenFactory");
-    const alpFactory = (await ALPFactory.deploy(
+    const ALPFactory = await ethers.getContractFactory("FarmingLPTokenFactory");
+    const flpFactory = (await ALPFactory.deploy(
         sushi.router.address,
         sushi.chef.address,
         sbVault.address
-    )) as AccruedLPTokenFactory;
+    )) as FarmingLPTokenFactory;
 
     const FlashFactory = await ethers.getContractFactory("FlashFTokenFactory");
     const flashFactory = (await FlashFactory.deploy()) as FlashFTokenFactory;
@@ -44,7 +44,7 @@ const setupTest = async feeRecipient => {
     const Factory = await ethers.getContractFactory("FlashStrategySushiSwapFactory");
     const factory = (await Factory.deploy(
         flashProtocol.address,
-        alpFactory.address,
+        flpFactory.address,
         feeRecipient.address
     )) as FlashStrategySushiSwapFactory;
 
@@ -56,7 +56,7 @@ const setupTest = async feeRecipient => {
         tokens,
         sushi,
         sbVault,
-        alpFactory,
+        flpFactory,
         flashFactory,
         flashNFT,
         flashProtocol,
@@ -65,14 +65,14 @@ const setupTest = async feeRecipient => {
 };
 
 describe("FlashStrategySushiSwapFactory", function () {
-    it("should create FlashStrategySushiSwap when alpToken exists", async function () {
+    it("should create FlashStrategySushiSwap when flpToken exists", async function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
-        const { tokens, sushi, alpFactory, flashProtocol, factory } = await setupTest(feeVault);
+        const { tokens, sushi, flpFactory, flashProtocol, factory } = await setupTest(feeVault);
 
         const { pid } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
-        await alpFactory.createAccruedLPToken(pid);
+        await flpFactory.createFarmingLPToken(pid);
 
         const address = await factory.predictFlashStrategySushiSwapAddress(pid);
         await expect(factory.createFlashStrategySushiSwap(pid)).to.emit(factory, "CreateFlashStrategySushiSwap");
@@ -88,11 +88,11 @@ describe("FlashStrategySushiSwapFactory", function () {
             "FlashStrategySushiSwapCreated"
         );
 
-        const alpToken = AccruedLPToken__factory.connect(await sousChef.alpToken(), ethers.provider);
-        const fTokenName = "FlashStrategySushiSwap " + (await alpToken.name());
-        const fTokenSymbol = "f" + (await alpToken.symbol()) + "-" + alpToken.address.substring(2, 6);
+        const flpToken = FarmingLPToken__factory.connect(await sousChef.flpToken(), ethers.provider);
+        const fTokenName = "FlashStrategySushiSwap " + (await flpToken.name());
+        const fTokenSymbol = "f" + (await flpToken.symbol()) + "-" + flpToken.address.substring(2, 6);
         await expect(
-            flashProtocol.registerStrategy(sousChef.address, alpToken.address, fTokenName, fTokenSymbol)
+            flashProtocol.registerStrategy(sousChef.address, flpToken.address, fTokenName, fTokenSymbol)
         ).to.emit(flashProtocol, "StrategyRegistered");
 
         const fToken = FlashFToken__factory.connect(await sousChef.fToken(), ethers.provider);
@@ -100,14 +100,14 @@ describe("FlashStrategySushiSwapFactory", function () {
         expect(await fToken.symbol()).to.be.equal(fTokenSymbol);
     });
 
-    it("should create FlashStrategySushiSwap when alpToken doesn't exist", async function () {
+    it("should create FlashStrategySushiSwap when flpToken doesn't exist", async function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
-        const { tokens, sushi, alpFactory, flashProtocol, factory } = await setupTest(feeVault);
+        const { tokens, sushi, flpFactory, flashProtocol, factory } = await setupTest(feeVault);
 
         const { pid } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
-        expect(await alpFactory.getAccruedLPToken(pid)).to.be.equal(constants.AddressZero);
+        expect(await flpFactory.getFarmingLPToken(pid)).to.be.equal(constants.AddressZero);
 
         const address = await factory.predictFlashStrategySushiSwapAddress(pid);
         await expect(factory.createFlashStrategySushiSwap(pid)).to.emit(factory, "CreateFlashStrategySushiSwap");
@@ -116,7 +116,7 @@ describe("FlashStrategySushiSwapFactory", function () {
             await factory.getFlashStrategySushiSwap(pid),
             ethers.provider
         );
-        expect(await alpFactory.getAccruedLPToken(pid)).to.be.equal(await sousChef.alpToken());
+        expect(await flpFactory.getFarmingLPToken(pid)).to.be.equal(await sousChef.flpToken());
         expect(sousChef.address).to.be.equal(address);
 
         await expect(factory.createFlashStrategySushiSwap(pid)).to.be.revertedWithCustomError(
@@ -124,11 +124,11 @@ describe("FlashStrategySushiSwapFactory", function () {
             "FlashStrategySushiSwapCreated"
         );
 
-        const alpToken = AccruedLPToken__factory.connect(await sousChef.alpToken(), ethers.provider);
-        const fTokenName = "FlashStrategySushiSwap " + (await alpToken.name());
-        const fTokenSymbol = "f" + (await alpToken.symbol()) + "-" + alpToken.address.substring(2, 6);
+        const flpToken = FarmingLPToken__factory.connect(await sousChef.flpToken(), ethers.provider);
+        const fTokenName = "FlashStrategySushiSwap " + (await flpToken.name());
+        const fTokenSymbol = "f" + (await flpToken.symbol()) + "-" + flpToken.address.substring(2, 6);
         expect(
-            await flashProtocol.registerStrategy(sousChef.address, alpToken.address, fTokenName, fTokenSymbol)
+            await flashProtocol.registerStrategy(sousChef.address, flpToken.address, fTokenName, fTokenSymbol)
         ).to.emit(flashProtocol, "StrategyRegistered");
 
         const fToken = FlashFToken__factory.connect(await sousChef.fToken(), ethers.provider);

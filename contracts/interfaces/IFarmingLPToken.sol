@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IAccruedLPToken is IERC20 {
+interface IFarmingLPToken is IERC20 {
     error InvalidPath();
     error InsufficientYield();
     error InsufficientAmount();

@@ -13,9 +13,9 @@ contract FlashStrategySushiSwapFactory is Ownable, IFlashStrategySushiSwapFactor
      */
     address public immutable override flashProtocol;
     /**
-     * @notice address of AccruedLPTokenFactory
+     * @notice address of FarmingLPTokenFactory
      */
-    address public immutable override alpTokenFactory;
+    address public immutable override flpTokenFactory;
 
     address internal immutable _implementation;
 
@@ -28,11 +28,11 @@ contract FlashStrategySushiSwapFactory is Ownable, IFlashStrategySushiSwapFactor
 
     constructor(
         address _flashProtocol,
-        address _alpTokenFactory,
+        address _flpTokenFactory,
         address _feeRecipient
     ) {
         flashProtocol = _flashProtocol;
-        alpTokenFactory = _alpTokenFactory;
+        flpTokenFactory = _flpTokenFactory;
         updateFeeRecipient(_feeRecipient);
 
         FlashStrategySushiSwap strategy = new FlashStrategySushiSwap();
@@ -55,7 +55,7 @@ contract FlashStrategySushiSwapFactory is Ownable, IFlashStrategySushiSwapFactor
         if (getFlashStrategySushiSwap[pid] != address(0)) revert FlashStrategySushiSwapCreated();
 
         strategy = Clones.cloneDeterministic(_implementation, bytes32(pid));
-        FlashStrategySushiSwap(strategy).initialize(flashProtocol, alpTokenFactory, pid);
+        FlashStrategySushiSwap(strategy).initialize(flashProtocol, flpTokenFactory, pid);
 
         getFlashStrategySushiSwap[pid] = strategy;
 

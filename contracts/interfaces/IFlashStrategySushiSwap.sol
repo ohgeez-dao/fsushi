@@ -20,11 +20,11 @@ interface IFlashStrategySushiSwap is IFlashStrategy {
 
     function sushi() external view returns (address);
 
-    function alpToken() external view returns (address);
+    function flpToken() external view returns (address);
 
     function initialize(
         address _flashProtocol,
-        address _alpTokenFactory,
+        address _flpTokenFactory,
         uint256 _pid
     ) external;
 }
