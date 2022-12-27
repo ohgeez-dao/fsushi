@@ -4,9 +4,6 @@ import { assert, expect } from "chai";
 import {
     FarmingLPTokenFactory,
     FarmingLPToken__factory,
-    FlashFTokenFactory,
-    FlashProtocol,
-    FlashNFT,
     FlashFToken__factory,
     UniswapV2Pair__factory,
     SushiBarVault,
@@ -18,6 +15,7 @@ import setupSushiswap, { SUSHI_PER_BLOCK } from "./utils/setupSushiswap";
 import setupTokens from "./utils/setupTokens";
 import addressEquals from "./utils/addressEquals";
 import now from "./utils/now";
+import setupFlashStake from "./utils/setupFlashStake";
 
 const ONE = ethers.constants.WeiPerEther;
 const YEAR = 365 * 24 * 3600;
@@ -28,31 +26,22 @@ const fee = (amount, feeBPS) => amount.mul(feeBPS).div(10000);
 const setupTest = async feeRecipient => {
     const tokens = await setupTokens();
     const sushi = await setupSushiswap(tokens);
+    const flash = await setupFlashStake();
     const [deployer, alice, bob, carol] = await ethers.getSigners();
 
     const SBVault = await ethers.getContractFactory("SushiBarVault");
     const sbVault = (await SBVault.deploy(tokens.sushi.address, sushi.bar.address)) as SushiBarVault;
 
-    const ALPFactory = await ethers.getContractFactory("FarmingLPTokenFactory");
-    const flpFactory = (await ALPFactory.deploy(
+    const FLPFactory = await ethers.getContractFactory("FarmingLPTokenFactory");
+    const flpFactory = (await FLPFactory.deploy(
         sushi.router.address,
         sushi.chef.address,
         sbVault.address
     )) as FarmingLPTokenFactory;
 
-    const FlashFactory = await ethers.getContractFactory("FlashFTokenFactory");
-    const flashFactory = (await FlashFactory.deploy()) as FlashFTokenFactory;
-
-    const FlashNft = await ethers.getContractFactory("FlashNFT");
-    const flashNFT = (await FlashNft.deploy()) as FlashNFT;
-
-    const Protocol = await ethers.getContractFactory("FlashProtocol");
-    const flashProtocol = (await Protocol.deploy(flashNFT.address, flashFactory.address)) as FlashProtocol;
-    await flashFactory.transferOwnership(flashProtocol.address);
-
     const Factory = await ethers.getContractFactory("FlashStrategySushiSwapFactory");
     const factory = (await Factory.deploy(
-        flashProtocol.address,
+        flash.protocol.address,
         flpFactory.address,
         feeRecipient.address
     )) as FlashStrategySushiSwapFactory;
@@ -61,26 +50,26 @@ const setupTest = async feeRecipient => {
         const { pid, lpToken } = await sushi.addPool(token0, token1, allocPoint);
         await factory.createFlashStrategySushiSwap(pid);
 
-        const sousChef = FlashStrategySushiSwap__factory.connect(
+        const strategy = FlashStrategySushiSwap__factory.connect(
             await factory.getFlashStrategySushiSwap(pid),
             ethers.provider
         );
-        const flpToken = FarmingLPToken__factory.connect(await sousChef.flpToken(), ethers.provider);
+        const flpToken = FarmingLPToken__factory.connect(await strategy.flpToken(), ethers.provider);
 
-        await flashProtocol.registerStrategy(
-            sousChef.address,
+        await flash.protocol.registerStrategy(
+            strategy.address,
             flpToken.address,
             "FlashStrategySushiSwap " + (await flpToken.name()),
             "f" + (await flpToken.symbol()) + "-" + flpToken.address.substring(2, 6)
         );
 
-        const fToken = FlashFToken__factory.connect(await sousChef.fToken(), ethers.provider);
+        const fToken = FlashFToken__factory.connect(await strategy.fToken(), ethers.provider);
 
         return {
             pid,
             lpToken,
             flpToken,
-            sousChef,
+            strategy,
             fToken,
         };
     };
@@ -155,9 +144,7 @@ const setupTest = async feeRecipient => {
         sushi,
         sbVault,
         flpFactory,
-        flashFactory,
-        flashNFT,
-        flashProtocol,
+        flash,
         mintSLP,
         createFlashStrategySushiSwap,
     };
@@ -168,24 +155,24 @@ describe("FlashStrategySushiSwap", function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
-        const { alice, tokens, flashProtocol, createFlashStrategySushiSwap, mintSLP } = await setupTest(feeVault);
+        const { alice, tokens, flash, createFlashStrategySushiSwap, mintSLP } = await setupTest(feeVault);
 
-        // add SUSHI-WETH pool, flpToken and sousChef
-        const { sousChef, flpToken, fToken } = await createFlashStrategySushiSwap(tokens.sushi, tokens.weth, 100);
+        // add SUSHI-WETH pool, flpToken and strategy
+        const { strategy, flpToken, fToken } = await createFlashStrategySushiSwap(tokens.sushi, tokens.weth, 100);
 
         const amount = ONE.mul(100);
         const amountLP = await mintSLP(alice, flpToken, amount);
         expect(await flpToken.balanceOf(alice.address)).to.be.equal(amountLP);
 
-        await flpToken.connect(alice).approve(flashProtocol.address, constants.MaxUint256);
+        await flpToken.connect(alice).approve(flash.protocol.address, constants.MaxUint256);
         // 100 SUSHI is pending
         expect(await flpToken.balanceOf(alice.address)).to.be.approximately(amountLP.add(SUSHI_PER_BLOCK), DELTA);
 
         // stake all SLP (staked LP amount + 200 pending SUSHI)
         const amountSLP = amountLP.add(SUSHI_PER_BLOCK.mul(2));
-        await flashProtocol.connect(alice).stake(sousChef.address, amountSLP, YEAR, alice.address, false);
+        await flash.protocol.connect(alice).stake(strategy.address, amountSLP, YEAR, alice.address, false);
         expect(await flpToken.balanceOf(alice.address)).to.be.equal(0);
-        expect(await flpToken.balanceOf(sousChef.address)).to.be.approximately(
+        expect(await flpToken.balanceOf(strategy.address)).to.be.approximately(
             amountSLP.sub(fee(amountSLP, 25)),
             DELTA
         );
