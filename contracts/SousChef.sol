@@ -133,8 +133,6 @@ contract SousChef is Ownable, ISousChef {
             totalSupply[pid] = _totalSupply;
 
             _updateWorkingBalance(pid, msg.sender, _balance, _totalSupply);
-
-            IFSushi(fSushi).mint(beneficiary, amount);
         }
 
         emit Deposit(pid, amount, beneficiary);
