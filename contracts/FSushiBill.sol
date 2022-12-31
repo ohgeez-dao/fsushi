@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./base/BaseERC20.sol";
 import "./interfaces/IFSushiBill.sol";
 import "./interfaces/ISousChef.sol";
-import "./interfaces/IFSushiVault.sol";
+import "./interfaces/IFSushiRestaurant.sol";
 import "./interfaces/IFSushiKitchen.sol";
 import "./interfaces/IFSushi.sol";
 import "./libraries/DateUtils.sol";
@@ -170,12 +170,12 @@ contract FSushiBill is BaseERC20, IFSushiBill {
         uint256 balance,
         uint256 supply
     ) internal {
-        address vault = ISousChef(sousChef).vault();
-        IFSushiVault(vault).userCheckpoint(account);
+        address restaurant = ISousChef(sousChef).restaurant();
+        IFSushiRestaurant(restaurant).userCheckpoint(account);
 
         uint256 week = block.timestamp.toWeekNumber();
-        uint256 lockedBalance = IFSushiVault(vault).lockedUserBalanceDuring(account, week - 1);
-        uint256 lockedTotal = IFSushiVault(vault).lockedTotalBalanceDuring(week - 1);
+        uint256 lockedBalance = IFSushiRestaurant(restaurant).lockedUserBalanceDuring(account, week - 1);
+        uint256 lockedTotal = IFSushiRestaurant(restaurant).lockedTotalBalanceDuring(week - 1);
 
         uint256 workingBalance = (balance * TOKENLESS_PRODUCTION) / 100;
         if (lockedTotal > 0) {

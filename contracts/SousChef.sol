@@ -29,16 +29,16 @@ contract SousChef is Ownable, ISousChef {
     address internal immutable _implementation;
 
     /**
-     * @notice address of IFSushiVault
+     * @notice address of IFSushiRestaurant
      */
-    address public override vault;
+    address public override restaurant;
 
     /**
      * @notice address of IFSushiKitchen
      */
     address public override kitchen;
 
-    mapping(uint256 => address) public override getFSushiBill;
+    mapping(uint256 => address) public override getBill;
     /**
      * @notice how much rewards to be minted at the week
      */
@@ -50,12 +50,12 @@ contract SousChef is Ownable, ISousChef {
 
     constructor(
         address _fSushi,
-        address _vault,
+        address _restaurant,
         address _kitchen,
         address _flashStrategyFactory
     ) {
         fSushi = _fSushi;
-        vault = _vault;
+        restaurant = _restaurant;
         kitchen = _kitchen;
         flashStrategyFactory = _flashStrategyFactory;
         uint256 week = block.timestamp.toWeekNumber() + 1;
@@ -68,28 +68,28 @@ contract SousChef is Ownable, ISousChef {
         _implementation = address(bill);
     }
 
-    function predictFSushiBillAddress(uint256 pid) external view override returns (address bill) {
+    function predictBillAddress(uint256 pid) external view override returns (address bill) {
         bill = Clones.predictDeterministicAddress(_implementation, bytes32(pid));
     }
 
-    function updateFSushiVault(address _fSushiVault) external override onlyOwner {
-        if (_fSushiVault == address(0)) revert InvalidFSushiVault();
+    function updateRestaurant(address _restaurant) external override onlyOwner {
+        if (_restaurant == address(0)) revert InvalidRestaurant();
 
-        vault = _fSushiVault;
+        restaurant = _restaurant;
 
-        emit UpdateFSushiVault(_fSushiVault);
+        emit UpdateRestaurant(_restaurant);
     }
 
-    function updateFSushiKitchen(address _fSushiKitchen) external override onlyOwner {
-        if (_fSushiKitchen == address(0)) revert InvalidFSushiKitchen();
+    function updateKitchen(address _kitchen) external override onlyOwner {
+        if (_kitchen == address(0)) revert InvalidKitchen();
 
-        kitchen = _fSushiKitchen;
+        kitchen = _kitchen;
 
-        emit UpdateFSushiKitchen(_fSushiKitchen);
+        emit UpdateKitchen(_kitchen);
     }
 
-    function createFSushiBill(uint256 pid) external override returns (address bill) {
-        if (getFSushiBill[pid] != address(0)) revert FSushiBillCreated();
+    function createBill(uint256 pid) external override returns (address bill) {
+        if (getBill[pid] != address(0)) revert BillCreated();
 
         address strategy = IFlashStrategySushiSwapFactory(flashStrategyFactory).getFlashStrategySushiSwap(pid);
         if (strategy == address(0)) revert InvalidPid();
@@ -97,9 +97,9 @@ contract SousChef is Ownable, ISousChef {
         bill = Clones.cloneDeterministic(_implementation, bytes32(pid));
         FSushiBill(bill).initialize(pid, IFlashStrategySushiSwap(strategy).fToken());
 
-        getFSushiBill[pid] = bill;
+        getBill[pid] = bill;
 
-        emit CreateFSushiBill(pid, bill);
+        emit CreateBill(pid, bill);
     }
 
     function checkpoint() external override {
@@ -111,7 +111,7 @@ contract SousChef is Ownable, ISousChef {
             // last week's circulating supply becomes the total rewards in this week
             // (week is already greater than startWeek)
             uint256 circulatingSupply = IFSushi(fSushi).checkpointedTotalSupplyDuring(week - 1) -
-                IFSushiVault(vault).checkpointedLockedTotalBalanceDuring(week - 1);
+                IFSushiRestaurant(restaurant).checkpointedLockedTotalBalanceDuring(week - 1);
             // emission rate decreases 1% every week
             uint256 rewards = (circulatingSupply * 99) / 100;
             // 10x bonus is given only for the first week
@@ -132,7 +132,7 @@ contract SousChef is Ownable, ISousChef {
         address to,
         uint256 amount
     ) external override {
-        if (getFSushiBill[pid] != msg.sender) revert Forbidden();
+        if (getBill[pid] != msg.sender) revert Forbidden();
 
         IFSushi(fSushi).mint(to, amount);
     }

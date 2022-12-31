@@ -3,15 +3,15 @@
 pragma solidity ^0.8.0;
 
 interface ISousChef {
-    error FSushiBillCreated();
+    error BillCreated();
     error InvalidPid();
-    error InvalidFSushiVault();
-    error InvalidFSushiKitchen();
+    error InvalidRestaurant();
+    error InvalidKitchen();
     error Forbidden();
 
-    event UpdateFSushiVault(address indexed fSushiVault);
-    event UpdateFSushiKitchen(address indexed fSushiKitchen);
-    event CreateFSushiBill(uint256 indexed pid, address indexed bill);
+    event UpdateRestaurant(address indexed restaurant);
+    event UpdateKitchen(address indexed kitchen);
+    event CreateBill(uint256 indexed pid, address indexed bill);
     event Checkpoint();
 
     function BONUS_MULTIPLIER() external view returns (uint256);
@@ -24,23 +24,23 @@ interface ISousChef {
 
     function startWeek() external view returns (uint256);
 
-    function vault() external view returns (address);
+    function restaurant() external view returns (address);
 
     function kitchen() external view returns (address);
 
-    function getFSushiBill(uint256 pid) external view returns (address);
+    function getBill(uint256 pid) external view returns (address);
 
     function weeklyRewards(uint256 week) external view returns (uint256);
 
     function lastCheckpoint() external view returns (uint256);
 
-    function predictFSushiBillAddress(uint256 pid) external view returns (address bill);
+    function predictBillAddress(uint256 pid) external view returns (address bill);
 
-    function updateFSushiVault(address _fSushiVault) external;
+    function updateRestaurant(address _restaurant) external;
 
-    function updateFSushiKitchen(address _fSushiKitchen) external;
+    function updateKitchen(address _kitchen) external;
 
-    function createFSushiBill(uint256 pid) external returns (address strategy);
+    function createBill(uint256 pid) external returns (address strategy);
 
     function checkpoint() external;
 

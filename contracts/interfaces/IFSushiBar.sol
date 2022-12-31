@@ -3,9 +3,9 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import "./IFSushiVault.sol";
+import "./IFSushiRestaurant.sol";
 
-interface IFSushiBar is IERC4626, IFSushiVault {
+interface IFSushiBar is IERC4626, IFSushiRestaurant {
     error TooEarly();
 
     function depositSigned(

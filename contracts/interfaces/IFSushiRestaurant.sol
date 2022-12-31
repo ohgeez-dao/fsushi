@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IFSushiVault {
+interface IFSushiRestaurant {
     function startWeek() external view returns (uint256);
 
     function lastDeposit(address account) external view returns (uint256);
