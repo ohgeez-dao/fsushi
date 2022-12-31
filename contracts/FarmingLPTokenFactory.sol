@@ -25,6 +25,7 @@ contract FarmingLPTokenFactory is Ownable, IFarmingLPTokenFactory {
         masterChef = _masterChef;
         yieldVault = _yieldVault;
         FarmingLPToken token = new FarmingLPToken();
+        token.initialize(address(0), address(0), 0);
         _implementation = address(token);
     }
 

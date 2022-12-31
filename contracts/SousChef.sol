@@ -64,7 +64,7 @@ contract SousChef is Ownable, ISousChef {
         weeklyRewards[week] = REWARDS_FOR_INITIAL_WEEK;
 
         FSushiBill bill = new FSushiBill();
-        bill.initialize(type(uint256).max, address(0));
+        bill.initialize(0, address(0));
         _implementation = address(bill);
     }
 

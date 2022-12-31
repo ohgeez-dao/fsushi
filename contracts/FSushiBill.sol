@@ -50,6 +50,8 @@ contract FSushiBill is BaseERC20, IFSushiBill {
     mapping(address => uint256) public override nextClaimableWeek; // account => week
 
     function initialize(uint256 _pid, address _fToken) external override initializer {
+        if (_fToken == address(0)) return;
+
         BaseERC20_initialize(
             string.concat("Flash Sushi Bill for ", IERC20Metadata(_fToken).name()),
             string.concat("x", IERC20Metadata(_fToken).symbol()),

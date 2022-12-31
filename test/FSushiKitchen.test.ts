@@ -36,7 +36,7 @@ const setupTest = async () => {
     };
 };
 
-describe("FSushiBar", function () {
+describe("FSushiKitchen", function () {
     beforeEach(async () => {
         await network.provider.request({
             method: "hardhat_reset",

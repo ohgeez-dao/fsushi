@@ -6,7 +6,6 @@ import "./IFlashStrategy.sol";
 
 interface IFlashStrategySushiSwap is IFlashStrategy {
     error Forbidden();
-    error InvalidFlashProtocol();
     error InvalidVault();
     error AmountTooLow();
     error InsufficientYield();

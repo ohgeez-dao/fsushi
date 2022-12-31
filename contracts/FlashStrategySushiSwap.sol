@@ -44,7 +44,7 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
         address _flpTokenFactory,
         uint256 _pid
     ) external override initializer {
-        if (_flashProtocol == address(0)) revert InvalidFlashProtocol();
+        if (_flashProtocol == address(0)) return;
 
         address _flpToken = IFarmingLPTokenFactory(_flpTokenFactory).getFarmingLPToken(_pid);
         if (_flpToken == address(0)) _flpToken = IFarmingLPTokenFactory(_flpTokenFactory).createFarmingLPToken(_pid);

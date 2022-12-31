@@ -42,6 +42,8 @@ contract FarmingLPToken is BaseERC20, ReentrancyGuard, IFarmingLPToken {
         address _masterChef,
         uint256 _pid
     ) external override initializer {
+        if (_router == address(0)) return;
+
         factory = msg.sender;
         (address _lpToken, , , ) = IMasterChef(_masterChef).poolInfo(_pid);
         address _token0 = IUniswapV2Pair(_lpToken).token0();
@@ -382,7 +384,7 @@ contract FarmingLPToken is BaseERC20, ReentrancyGuard, IFarmingLPToken {
         uint256 balance = balanceOf(from);
         uint256 shares = balance == 0 ? 0 : (amount * sharesOf(from)) / balance;
 
-        (balanceOfFrom, balanceOfTo) = super._transfer(from, to, amount);
+        (balanceOfFrom, balanceOfTo) = super._transfer(from, to, shares);
 
         int256 _magCorrection = (_pointsPerShare * shares).toInt256();
         _pointsCorrection[from] += _magCorrection;

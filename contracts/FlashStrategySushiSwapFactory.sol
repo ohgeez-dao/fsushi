@@ -36,7 +36,7 @@ contract FlashStrategySushiSwapFactory is Ownable, IFlashStrategySushiSwapFactor
         updateFeeRecipient(_feeRecipient);
 
         FlashStrategySushiSwap strategy = new FlashStrategySushiSwap();
-        strategy.initialize(_flashProtocol, _flpTokenFactory, type(uint256).max);
+        strategy.initialize(address(0), address(0), 0);
         _implementation = address(strategy);
     }
 
