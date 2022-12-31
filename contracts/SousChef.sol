@@ -44,7 +44,7 @@ contract SousChef is Ownable, ISousChef {
      */
     mapping(uint256 => uint256) public override weeklyRewards; // week => amount
     /**
-     * @notice weeklyRewards is guaranteed to be correct before this week
+     * @notice weeklyRewards is guaranteed to be correct before this week (exclusive)
      */
     uint256 public override lastCheckpoint; // week
 
@@ -58,10 +58,10 @@ contract SousChef is Ownable, ISousChef {
         restaurant = _restaurant;
         kitchen = _kitchen;
         flashStrategyFactory = _flashStrategyFactory;
-        uint256 week = block.timestamp.toWeekNumber() + 1;
-        startWeek = week;
-        lastCheckpoint = week;
-        weeklyRewards[week] = REWARDS_FOR_INITIAL_WEEK;
+        uint256 nextWeek = block.timestamp.toWeekNumber() + 1;
+        startWeek = nextWeek;
+        lastCheckpoint = nextWeek + 1;
+        weeklyRewards[nextWeek] = REWARDS_FOR_INITIAL_WEEK;
 
         FSushiBill bill = new FSushiBill();
         bill.initialize(0, address(0));
@@ -103,14 +103,18 @@ contract SousChef is Ownable, ISousChef {
         emit CreateBill(pid, bill);
     }
 
+    /**
+     * @dev if this function doesn't get called for 512 weeks (around 9.8 years) this contract breaks
+     */
     function checkpoint() external override {
-        uint256 from = lastCheckpoint + 1;
-        uint256 until = block.timestamp.toWeekNumber();
+        uint256 from = lastCheckpoint;
+        uint256 until = block.timestamp.toWeekNumber() + 1;
+        if (until <= from) return;
+
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
-            if (until < week) break;
+            if (until <= week) break;
             // last week's circulating supply becomes the total rewards in this week
-            // (week is already greater than startWeek)
             uint256 circulatingSupply = IFSushi(fSushi).checkpointedTotalSupplyDuring(week - 1) -
                 IFSushiRestaurant(restaurant).checkpointedLockedTotalBalanceDuring(week - 1);
             // emission rate decreases 1% every week
