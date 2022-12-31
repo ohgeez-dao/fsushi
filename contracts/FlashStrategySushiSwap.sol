@@ -39,15 +39,8 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
      */
     address public override fToken;
 
-    function initialize(
-        address _flashProtocol,
-        address _flpTokenFactory,
-        uint256 _pid
-    ) external override initializer {
+    function initialize(address _flashProtocol, address _flpToken) external override initializer {
         if (_flashProtocol == address(0)) return;
-
-        address _flpToken = IFarmingLPTokenFactory(_flpTokenFactory).getFarmingLPToken(_pid);
-        if (_flpToken == address(0)) _flpToken = IFarmingLPTokenFactory(_flpTokenFactory).createFarmingLPToken(_pid);
 
         factory = msg.sender;
         flashProtocol = _flashProtocol;

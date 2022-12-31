@@ -36,7 +36,7 @@ contract FlashStrategySushiSwapFactory is Ownable, IFlashStrategySushiSwapFactor
         updateFeeRecipient(_feeRecipient);
 
         FlashStrategySushiSwap strategy = new FlashStrategySushiSwap();
-        strategy.initialize(address(0), address(0), 0);
+        strategy.initialize(address(0), address(0));
         _implementation = address(strategy);
     }
 
@@ -55,8 +55,11 @@ contract FlashStrategySushiSwapFactory is Ownable, IFlashStrategySushiSwapFactor
     function createFlashStrategySushiSwap(uint256 pid) external override returns (address strategy) {
         if (getFlashStrategySushiSwap[pid] != address(0)) revert FlashStrategySushiSwapCreated();
 
+        address flpToken = IFarmingLPTokenFactory(flpTokenFactory).getFarmingLPToken(pid);
+        if (flpToken == address(0)) flpToken = IFarmingLPTokenFactory(flpTokenFactory).createFarmingLPToken(pid);
+
         strategy = Clones.cloneDeterministic(_implementation, bytes32(pid));
-        FlashStrategySushiSwap(strategy).initialize(flashProtocol, flpTokenFactory, pid);
+        FlashStrategySushiSwap(strategy).initialize(flashProtocol, flpToken);
 
         getFlashStrategySushiSwap[pid] = strategy;
 

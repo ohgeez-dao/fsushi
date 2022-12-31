@@ -21,9 +21,5 @@ interface IFlashStrategySushiSwap is IFlashStrategy {
 
     function flpToken() external view returns (address);
 
-    function initialize(
-        address _flashProtocol,
-        address _flpTokenFactory,
-        uint256 _pid
-    ) external;
+    function initialize(address _flashProtocol, address _flpToken) external;
 }
