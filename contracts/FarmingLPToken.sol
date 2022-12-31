@@ -378,11 +378,11 @@ contract FarmingLPToken is BaseERC20, ReentrancyGuard, IFarmingLPToken {
         address from,
         address to,
         uint256 amount
-    ) internal override {
+    ) internal override returns (uint256 balanceOfFrom, uint256 balanceOfTo) {
         uint256 balance = balanceOf(from);
         uint256 shares = balance == 0 ? 0 : (amount * sharesOf(from)) / balance;
 
-        super._transfer(from, to, shares);
+        (balanceOfFrom, balanceOfTo) = super._transfer(from, to, amount);
 
         int256 _magCorrection = (_pointsPerShare * shares).toInt256();
         _pointsCorrection[from] += _magCorrection;

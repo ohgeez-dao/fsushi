@@ -135,15 +135,17 @@ abstract contract BaseERC20 is Initializable, IERC20Metadata {
         address from,
         address to,
         uint256 amount
-    ) internal virtual {
+    ) internal virtual returns (uint256 balanceOfFrom, uint256 balanceOfTo) {
         if (from == address(0)) revert InvalidSender();
         if (to == address(0)) revert InvalidReceiver();
 
         uint256 balance = _balanceOf[from];
         if (balance < amount) revert NotEnoughBalance();
         unchecked {
-            _balanceOf[from] = balance - amount;
-            _balanceOf[to] += amount;
+            balanceOfFrom = balance - amount;
+            balanceOfTo = _balanceOf[to] + amount;
+            _balanceOf[from] = balanceOfFrom;
+            _balanceOf[to] = balanceOfTo;
         }
 
         emit Transfer(from, to, amount);

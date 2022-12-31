@@ -238,14 +238,14 @@ contract FSushiBill is BaseERC20, IFSushiBill {
         address from,
         address to,
         uint256 amount
-    ) internal override {
+    ) internal override returns (uint256 balanceOfFrom, uint256 balanceOfTo) {
         _userCheckpoint(from);
         _userCheckpoint(to);
 
-        super._transfer(from, to, amount);
+        (balanceOfFrom, balanceOfTo) = super._transfer(from, to, amount);
 
         uint256 totalSupply = _totalSupply;
-        _updateWorkingBalance(msg.sender, _balanceOf[from], totalSupply);
-        _updateWorkingBalance(msg.sender, _balanceOf[to], totalSupply);
+        _updateWorkingBalance(msg.sender, balanceOfFrom, totalSupply);
+        _updateWorkingBalance(msg.sender, balanceOfTo, totalSupply);
     }
 }
