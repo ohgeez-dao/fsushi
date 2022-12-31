@@ -92,7 +92,8 @@ contract SousChef is Ownable, ISousChef {
         if (getBill[pid] != address(0)) revert BillCreated();
 
         address strategy = IFlashStrategySushiSwapFactory(flashStrategyFactory).getFlashStrategySushiSwap(pid);
-        if (strategy == address(0)) revert InvalidPid();
+        if (strategy == address(0))
+            strategy = IFlashStrategySushiSwapFactory(flashStrategyFactory).createFlashStrategySushiSwap(pid);
 
         bill = Clones.cloneDeterministic(_implementation, bytes32(pid));
         FSushiBill(bill).initialize(pid, IFlashStrategySushiSwap(strategy).fToken());

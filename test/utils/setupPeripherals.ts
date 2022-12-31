@@ -35,14 +35,6 @@ const setupPeripherals = async (tokens, sushi, flash, feeRecipient) => {
             ethers.provider
         );
         const flpToken = FarmingLPToken__factory.connect(await strategy.flpToken(), ethers.provider);
-
-        await flash.protocol.registerStrategy(
-            strategy.address,
-            flpToken.address,
-            "FlashStrategySushiSwap " + (await flpToken.name()),
-            "f" + (await flpToken.symbol()) + "-" + flpToken.address.substring(2, 6)
-        );
-
         const fToken = FlashFToken__factory.connect(await strategy.fToken(), ethers.provider);
 
         return {

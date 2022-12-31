@@ -20,9 +20,9 @@ interface IFlashStrategySushiSwapFactory {
 
     function getFlashStrategySushiSwap(uint256 pid) external view returns (address);
 
-    function predictFlashStrategySushiSwapAddress(uint256 pid) external view returns (address token);
+    function predictFlashStrategySushiSwapAddress(uint256 pid) external view returns (address strategy);
 
     function updateFeeRecipient(address _feeRecipient) external;
 
-    function createFlashStrategySushiSwap(uint256 pid) external returns (address token);
+    function createFlashStrategySushiSwap(uint256 pid) external returns (address strategy);
 }

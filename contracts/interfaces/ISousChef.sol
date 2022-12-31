@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 interface ISousChef {
     error BillCreated();
-    error InvalidPid();
     error InvalidRestaurant();
     error InvalidKitchen();
     error Forbidden();

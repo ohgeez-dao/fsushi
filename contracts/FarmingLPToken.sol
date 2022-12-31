@@ -64,7 +64,7 @@ contract FarmingLPToken is BaseERC20, ReentrancyGuard, IFarmingLPToken {
                 IERC20Metadata(_token1).name(),
                 ")"
             ),
-            string.concat("aLP:", IERC20Metadata(_token0).symbol(), "-", IERC20Metadata(_token1).symbol()),
+            string.concat("fLP:", IERC20Metadata(_token0).symbol(), "-", IERC20Metadata(_token1).symbol()),
             "1"
         );
         approveMax();

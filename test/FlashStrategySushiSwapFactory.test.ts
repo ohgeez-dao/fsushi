@@ -56,7 +56,7 @@ describe("FlashStrategySushiSwapFactory", function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
-        const { tokens, sushi, flpFactory, flash, factory } = await setupTest(feeVault);
+        const { tokens, sushi, flpFactory, factory } = await setupTest(feeVault);
 
         const { pid } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
         await flpFactory.createFarmingLPToken(pid);
@@ -76,11 +76,8 @@ describe("FlashStrategySushiSwapFactory", function () {
         );
 
         const flpToken = FarmingLPToken__factory.connect(await strategy.flpToken(), ethers.provider);
-        const fTokenName = "FlashStrategySushiSwap " + (await flpToken.name());
-        const fTokenSymbol = "f" + (await flpToken.symbol()) + "-" + flpToken.address.substring(2, 6);
-        await expect(
-            flash.protocol.registerStrategy(strategy.address, flpToken.address, fTokenName, fTokenSymbol)
-        ).to.emit(flash.protocol, "StrategyRegistered");
+        const fTokenName = "fToken for " + (await flpToken.name());
+        const fTokenSymbol = "f" + (await flpToken.symbol()) + "-" + flpToken.address.substring(2, 6).toLowerCase();
 
         const fToken = FlashFToken__factory.connect(await strategy.fToken(), ethers.provider);
         expect(await fToken.name()).to.be.equal(fTokenName);
@@ -91,7 +88,7 @@ describe("FlashStrategySushiSwapFactory", function () {
         const Vault = await ethers.getContractFactory("FeeVault");
         const feeVault = (await Vault.deploy()) as FeeVault;
 
-        const { tokens, sushi, flpFactory, flash, factory } = await setupTest(feeVault);
+        const { tokens, sushi, flpFactory, factory } = await setupTest(feeVault);
 
         const { pid } = await sushi.addPool(tokens.sushi, tokens.weth, 100);
         expect(await flpFactory.getFarmingLPToken(pid)).to.be.equal(constants.AddressZero);
@@ -112,11 +109,8 @@ describe("FlashStrategySushiSwapFactory", function () {
         );
 
         const flpToken = FarmingLPToken__factory.connect(await strategy.flpToken(), ethers.provider);
-        const fTokenName = "FlashStrategySushiSwap " + (await flpToken.name());
-        const fTokenSymbol = "f" + (await flpToken.symbol()) + "-" + flpToken.address.substring(2, 6);
-        expect(
-            await flash.protocol.registerStrategy(strategy.address, flpToken.address, fTokenName, fTokenSymbol)
-        ).to.emit(flash.protocol, "StrategyRegistered");
+        const fTokenName = "fToken for " + (await flpToken.name());
+        const fTokenSymbol = "f" + (await flpToken.symbol()) + "-" + flpToken.address.substring(2, 6).toLowerCase();
 
         const fToken = FlashFToken__factory.connect(await strategy.fToken(), ethers.provider);
         expect(await fToken.name()).to.be.equal(fTokenName);
