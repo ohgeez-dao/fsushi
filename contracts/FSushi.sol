@@ -117,14 +117,14 @@ contract FSushi is Ownable, ERC20, IFSushi {
 
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
+            uint256 old = totalSupplyDuring[week];
             if (week == until) {
-                uint256 prev = totalSupplyDuring[week];
                 uint256 current = totalSupply();
-                if (current > prev) {
+                if (current > old) {
                     totalSupplyDuring[week] = current;
                 }
                 break;
-            } else if (startWeek < week) {
+            } else if (startWeek < week && old == 0) {
                 totalSupplyDuring[week] = totalSupplyDuring[week - 1];
             }
 
