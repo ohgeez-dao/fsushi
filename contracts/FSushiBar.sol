@@ -34,7 +34,7 @@ contract FSushiBar is ERC4626, IFSushiBar {
      */
     mapping(address => mapping(uint256 => uint256)) public override lockedUserBalanceDuring;
     /**
-     * @notice lockedUserBalanceDuring is guaranteed to be correct before this week
+     * @notice lockedUserBalanceDuring is guaranteed to be correct before this week (exclusive)
      */
     mapping(address => uint256) public override lastUserCheckpoint; // week
 
@@ -60,7 +60,7 @@ contract FSushiBar is ERC4626, IFSushiBar {
     function checkpoint() public override {
         uint256 from = lastCheckpoint;
         uint256 until = block.timestamp.toWeekNumber();
-        if (from == until) return;
+        if (until <= from) return;
 
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
@@ -83,8 +83,11 @@ contract FSushiBar is ERC4626, IFSushiBar {
         checkpoint();
 
         uint256 from = lastUserCheckpoint[account];
+        if (from == 0) {
+            from = startWeek;
+        }
         uint256 until = block.timestamp.toWeekNumber();
-        if (from == until) return;
+        if (until <= from) return;
 
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;

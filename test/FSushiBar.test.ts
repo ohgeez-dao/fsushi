@@ -46,6 +46,10 @@ describe("FSushiBar", function () {
         expect(await fSushiBar.startWeek()).to.be.equal(week0);
         expect(await fSushiBar.lastCheckpoint()).to.be.equal(week0);
 
+        await expect(fSushiBar.connect(alice).deposit(ONE, alice.address)).to.be.revertedWithCustomError(
+            fSushiBar,
+            "TooEarly"
+        );
         expect(await fSushiBar.lockedTotalBalanceDuring(week0)).to.be.equal(0);
 
         await mineAtWeekStart(week0);
@@ -53,14 +57,23 @@ describe("FSushiBar", function () {
         await fSushi.connect(alice).approve(fSushiBar.address, ONE);
         await fSushiBar.connect(alice).deposit(ONE, alice.address);
         expect(await fSushiBar.lockedTotalBalanceDuring(week0)).to.be.equal(ONE);
+        expect(await fSushiBar.lockedUserBalanceDuring(alice.address, week0)).to.be.equal(ONE);
+        expect(await fSushiBar.lockedUserBalanceDuring(bob.address, week0)).to.be.equal(0);
+        expect(await fSushiBar.lockedUserBalanceDuring(carol.address, week0)).to.be.equal(0);
 
         await fSushi.connect(bob).approve(fSushiBar.address, ONE);
         await fSushiBar.connect(bob).deposit(ONE, bob.address);
         expect(await fSushiBar.lockedTotalBalanceDuring(week0)).to.be.equal(ONE.mul(2));
+        expect(await fSushiBar.lockedUserBalanceDuring(alice.address, week0)).to.be.equal(ONE);
+        expect(await fSushiBar.lockedUserBalanceDuring(bob.address, week0)).to.be.equal(ONE);
+        expect(await fSushiBar.lockedUserBalanceDuring(carol.address, week0)).to.be.equal(0);
 
         await fSushi.connect(carol).approve(fSushiBar.address, ONE);
         await fSushiBar.connect(carol).deposit(ONE, carol.address);
         expect(await fSushiBar.lockedTotalBalanceDuring(week0)).to.be.equal(ONE.mul(3));
+        expect(await fSushiBar.lockedUserBalanceDuring(alice.address, week0)).to.be.equal(ONE);
+        expect(await fSushiBar.lockedUserBalanceDuring(bob.address, week0)).to.be.equal(ONE);
+        expect(await fSushiBar.lockedUserBalanceDuring(carol.address, week0)).to.be.equal(ONE);
 
         await expect(
             fSushiBar.connect(alice).withdraw(ONE, alice.address, alice.address)
@@ -71,25 +84,55 @@ describe("FSushiBar", function () {
 
         await fSushiBar.connect(alice).withdraw(ONE, alice.address, alice.address);
         expect(await fSushiBar.lockedTotalBalanceDuring(week1)).to.be.equal(ONE.mul(2));
+        expect(await fSushiBar.lockedUserBalanceDuring(alice.address, week1)).to.be.equal(0);
+        expect(await fSushiBar.lockedUserBalanceDuring(bob.address, week1)).to.be.equal(0);
+        expect(await fSushiBar.lockedUserBalanceDuring(carol.address, week1)).to.be.equal(0);
+
+        await fSushiBar.userCheckpoint(bob.address);
+        expect(await fSushiBar.lockedUserBalanceDuring(bob.address, week1)).to.be.equal(ONE);
+
+        await fSushiBar.userCheckpoint(carol.address);
+        expect(await fSushiBar.lockedUserBalanceDuring(carol.address, week1)).to.be.equal(ONE);
 
         await fSushiBar.connect(bob).withdraw(ONE, bob.address, bob.address);
         expect(await fSushiBar.lockedTotalBalanceDuring(week1)).to.be.equal(ONE);
+        expect(await fSushiBar.lockedUserBalanceDuring(alice.address, week1)).to.be.equal(0);
+        expect(await fSushiBar.lockedUserBalanceDuring(bob.address, week1)).to.be.equal(0);
+        expect(await fSushiBar.lockedUserBalanceDuring(carol.address, week1)).to.be.equal(ONE);
 
         await fSushiBar.connect(carol).withdraw(ONE, carol.address, carol.address);
         expect(await fSushiBar.lockedTotalBalanceDuring(week1)).to.be.equal(0);
+        expect(await fSushiBar.lockedUserBalanceDuring(alice.address, week1)).to.be.equal(0);
+        expect(await fSushiBar.lockedUserBalanceDuring(bob.address, week1)).to.be.equal(0);
+        expect(await fSushiBar.lockedUserBalanceDuring(carol.address, week1)).to.be.equal(0);
 
         await fSushi.connect(alice).approve(fSushiBar.address, ONE);
         await fSushiBar.connect(alice).deposit(ONE, alice.address);
         expect(await fSushiBar.lockedTotalBalanceDuring(week1)).to.be.equal(ONE);
+        expect(await fSushiBar.lockedUserBalanceDuring(alice.address, week1)).to.be.equal(ONE);
+        expect(await fSushiBar.lockedUserBalanceDuring(bob.address, week1)).to.be.equal(0);
+        expect(await fSushiBar.lockedUserBalanceDuring(carol.address, week1)).to.be.equal(0);
 
         await time.increase(WEEK * 10);
         for (let i = 0; i < 10; i++) {
             expect(await fSushiBar.lockedTotalBalanceDuring(week1 + i + 1)).to.be.equal(0);
+            expect(await fSushiBar.lockedUserBalanceDuring(alice.address, week1 + i + 1)).to.be.equal(0);
+            expect(await fSushiBar.lockedUserBalanceDuring(bob.address, week1 + i + 1)).to.be.equal(0);
+            expect(await fSushiBar.lockedUserBalanceDuring(carol.address, week1 + i + 1)).to.be.equal(0);
         }
 
         await fSushiBar.checkpoint();
         for (let i = 0; i < 10; i++) {
             expect(await fSushiBar.lockedTotalBalanceDuring(week1 + i + 1)).to.be.equal(ONE);
+            expect(await fSushiBar.lockedUserBalanceDuring(alice.address, week1 + i + 1)).to.be.equal(0);
+            expect(await fSushiBar.lockedUserBalanceDuring(bob.address, week1 + i + 1)).to.be.equal(0);
+            expect(await fSushiBar.lockedUserBalanceDuring(carol.address, week1 + i + 1)).to.be.equal(0);
+        }
+
+        await fSushiBar.userCheckpoint(alice.address);
+        for (let i = 0; i < 10; i++) {
+            expect(await fSushiBar.lockedTotalBalanceDuring(week1 + i + 1)).to.be.equal(ONE);
+            expect(await fSushiBar.lockedUserBalanceDuring(alice.address, week1 + i + 1)).to.be.equal(ONE);
         }
     });
 });
