@@ -39,18 +39,20 @@ describe("FSushi", function () {
         expect(await fSushi.startWeek()).to.be.equal(startWeek);
         expect(await fSushi.lastCheckpoint()).to.be.equal(startWeek);
 
+        await fSushi.mint(alice.address, ONE);
+        expect(await fSushi.totalSupplyDuring(startWeek - 1)).to.be.equal(0);
         expect(await fSushi.totalSupplyDuring(startWeek)).to.be.equal(0);
 
         await mineAtWeekStart(startWeek);
 
         await fSushi.mint(alice.address, ONE);
-        expect(await fSushi.totalSupplyDuring(startWeek)).to.be.equal(ONE);
-
-        await fSushi.mint(bob.address, ONE);
         expect(await fSushi.totalSupplyDuring(startWeek)).to.be.equal(ONE.mul(2));
 
-        await fSushi.mint(carol.address, ONE);
+        await fSushi.mint(bob.address, ONE);
         expect(await fSushi.totalSupplyDuring(startWeek)).to.be.equal(ONE.mul(3));
+
+        await fSushi.mint(carol.address, ONE);
+        expect(await fSushi.totalSupplyDuring(startWeek)).to.be.equal(ONE.mul(4));
 
         await mineAtWeekStart(startWeek + 10);
         for (let i = 0; i < 10; i++) {
@@ -59,7 +61,7 @@ describe("FSushi", function () {
 
         await fSushi.checkpoint();
         for (let i = 0; i < 10; i++) {
-            expect(await fSushi.totalSupplyDuring(startWeek + i + 1)).to.be.equal(ONE.mul(3));
+            expect(await fSushi.totalSupplyDuring(startWeek + i + 1)).to.be.equal(ONE.mul(4));
         }
     });
 });
