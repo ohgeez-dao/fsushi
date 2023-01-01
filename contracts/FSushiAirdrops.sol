@@ -19,6 +19,7 @@ contract FSushiAirdrops is Ownable {
     error InvalidName();
     error InvalidId();
     error InvalidSignature();
+    error Expired();
     error Claimed();
 
     event UpdateSigner(address indexed signer);
@@ -50,17 +51,22 @@ contract FSushiAirdrops is Ownable {
         uint256 id,
         uint256 amount,
         address beneficiary,
+        uint256 deadline,
         uint8 v,
         bytes32 r,
         bytes32 s
     ) external {
+        if (block.timestamp > deadline) revert Expired();
+
         string memory name = airdrops[id];
         if (bytes(name).length == 0) revert InvalidId();
 
         if (hasClaimed[id][msg.sender]) revert Claimed();
         hasClaimed[id][msg.sender] = true;
 
-        bytes32 hash = keccak256(abi.encodePacked(block.chainid, address(this), id, msg.sender, amount));
+        bytes32 hash = keccak256(
+            abi.encodePacked(block.chainid, address(this), id, msg.sender, amount, beneficiary, deadline)
+        );
         address _signer = ECDSA.recover(ECDSA.toEthSignedMessageHash(hash), v, r, s);
         if (_signer != signer) revert InvalidSignature();
 
