@@ -9,7 +9,7 @@ export default async ({ getNamedAccounts, deployments }) => {
         args: [fSushi.address],
         log: true,
     });
-    await execute(
+    const { address } = await execute(
         "FSushiAirdrops",
         {
             from: deployer,
@@ -17,5 +17,15 @@ export default async ({ getNamedAccounts, deployments }) => {
         },
         "updateSigner",
         deployer
+    );
+    await execute(
+        "FSushi",
+        {
+            from: deployer,
+            log: true,
+        },
+        "setMinter",
+        address,
+        true
     );
 };
