@@ -5,18 +5,25 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface IFSushi is IERC20Metadata {
+    error Forbidden();
     error Expired();
     error InvalidSignature();
+
+    event SetMinter(address indexed account, bool indexed isMinter);
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     function startWeek() external view returns (uint256);
+
+    function isMinter(address account) external view returns (bool);
 
     function nonces(address account) external view returns (uint256);
 
     function totalSupplyDuring(uint256 time) external view returns (uint256);
 
     function lastCheckpoint() external view returns (uint256);
+
+    function setMinter(address account, bool _isMinter) external;
 
     function permit(
         address owner,

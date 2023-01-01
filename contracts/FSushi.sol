@@ -23,6 +23,8 @@ contract FSushi is Ownable, ERC20, IFSushi {
 
     uint256 public immutable override startWeek;
 
+    mapping(address => bool) public override isMinter;
+
     mapping(address => uint256) public override nonces;
     /**
      * @return minimum number of minted total supply during the whole week (only available >= startWeek)
@@ -32,6 +34,11 @@ contract FSushi is Ownable, ERC20, IFSushi {
      * @notice totalSupplyDuring is guaranteed to be correct before this week (exclusive)
      */
     uint256 public override lastCheckpoint;
+
+    modifier onlyMinter() {
+        if (!isMinter[msg.sender]) revert Forbidden();
+        _;
+    }
 
     constructor() ERC20("Flash Sushi Token", "fSUSHI") {
         uint256 nextWeek = block.timestamp.toWeekNumber() + 1;
@@ -75,6 +82,12 @@ contract FSushi is Ownable, ERC20, IFSushi {
         return ECDSA.toTypedDataHash(_domainSeparatorV4(), structHash);
     }
 
+    function setMinter(address account, bool _isMinter) external override onlyOwner {
+        isMinter[account] = _isMinter;
+
+        emit SetMinter(account, _isMinter);
+    }
+
     function permit(
         address owner,
         address spender,
@@ -96,7 +109,7 @@ contract FSushi is Ownable, ERC20, IFSushi {
         _approve(owner, spender, value);
     }
 
-    function mint(address to, uint256 amount) external onlyOwner {
+    function mint(address to, uint256 amount) external onlyMinter {
         _mint(to, amount);
 
         checkpoint();
