@@ -4,12 +4,12 @@ export default async ({ getNamedAccounts, deployments }) => {
 
     const fSushi = await get("FSushi");
 
-    await deploy("FSushiAirdrops", {
+    const { address } = await deploy("FSushiAirdrops", {
         from: deployer,
         args: [fSushi.address],
         log: true,
     });
-    const { address } = await execute(
+    await execute(
         "FSushiAirdrops",
         {
             from: deployer,
