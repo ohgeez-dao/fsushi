@@ -1,6 +1,7 @@
 {
-  "name": "@ohgeez-dao/fsushi",
+  "name": "@ohgeez/fsushi",
   "description": "",
+  "version": "0.1.0",
   "keywords": [
     "levx",
     "ohgeez",
