@@ -5,7 +5,6 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/IFSushi.sol";
-import "./libraries/MerkleProof.sol";
 
 contract FSushiAirdrops is Ownable {
     bytes32 private constant CLAIM_TYPEHASH =
