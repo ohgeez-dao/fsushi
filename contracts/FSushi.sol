@@ -24,6 +24,7 @@ contract FSushi is Ownable, ERC20, IFSushi {
     uint256 public immutable override startWeek;
 
     mapping(address => bool) public override isMinter;
+    bool public override mintersLocked;
 
     mapping(address => uint256) public override nonces;
     /**
@@ -83,9 +84,17 @@ contract FSushi is Ownable, ERC20, IFSushi {
     }
 
     function setMinter(address account, bool _isMinter) external override onlyOwner {
+        if (mintersLocked) revert MintersLocked();
+
         isMinter[account] = _isMinter;
 
         emit SetMinter(account, _isMinter);
+    }
+
+    function lockMinters() external onlyOwner {
+        mintersLocked = true;
+
+        emit LockMinters();
     }
 
     function permit(
@@ -147,5 +156,7 @@ contract FSushi is Ownable, ERC20, IFSushi {
         }
 
         lastCheckpoint = until;
+
+        emit Checkpoint(until);
     }
 }
