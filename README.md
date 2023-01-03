@@ -63,7 +63,7 @@ A plain ERC20 token that only `SousChef` can mint.
 
 ## License
 
-Distributed under the BSL-1.1 License. See `LICENSE` for more information.
+Distributed under the BUSL-1.1 License. See `LICENSE` for more information.
 
 ## Author
 

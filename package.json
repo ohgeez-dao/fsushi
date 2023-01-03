@@ -15,7 +15,7 @@
     "url": "https://github.com/ohgeez-dao/fsushi/issues",
     "email": "team@levx.io"
   },
-  "license": "BSL-1.1",
+  "license": "BUSL-1.1",
   "author": "LevX <team@levx.io>",
   "files": [
     "abis",
@@ -31,11 +31,11 @@
     "console": "hardhat console",
     "hardhat:deploy": "hardhat deploy",
     "mainnet:deploy": "hardhat --network mainnet deploy",
-    "mainnet:verify": "hardhat --network mainnet etherscan-verify --solc-input --license UNLICENSED --force-license",
+    "mainnet:verify": "hardhat --network mainnet etherscan-verify --solc-input --license BUSL-1.1 --force-license",
     "mainnet:export": "hardhat --network mainnet export",
     "testnet:deploy": "yarn goerli:deploy && yarn bsc-testnet:deploy && yarn mumbai:deploy && yarn fuji:deploy && yarn optimism-goerli:deploy && yarn arbitrum-goerli:deploy && yarn fantom-testnet:deploy",
     "goerli:deploy": "hardhat --network goerli deploy",
-    "goerli:verify": "hardhat --network goerli etherscan-verify --solc-input --license UNLICENSED --force-license",
+    "goerli:verify": "hardhat --network goerli etherscan-verify --solc-input --license BUSL-1.1 --force-license",
     "goerli:export": "hardhat --network goerli export --export exports/goerli.json",
     "bsc:deploy": "hardhat --network bsc deploy",
     "bsc:export": "hardhat --network bsc export --export exports/bsc.json",
