@@ -1,0 +1,279 @@
+{
+  "address": "0x7C375121690Bd65295B33c526F39dA1BAEDcFC97",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_votingEscrow",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_fSushi",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "Claimed",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Expired",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "beneficiary",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fromWeek",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "untilWeek",
+          "type": "uint256"
+        }
+      ],
+      "name": "Claim",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "beneficiary",
+          "type": "address"
+        }
+      ],
+      "name": "claim",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "fSushi",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lastCheckpoint",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "lastCheckpointOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "startWeek",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "votingEscrow",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "votingEscrowInterval",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "votingEscrowTotalSupply",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xc78186161907af5574cd669c4ffeb511afd9876cb31a09f560258ad16cb1d163",
+  "receipt": {
+    "to": null,
+    "from": "0x612ef87bfcd858687160294b0eFFACA0CBA342E2",
+    "contractAddress": "0x7C375121690Bd65295B33c526F39dA1BAEDcFC97",
+    "transactionIndex": 143,
+    "gasUsed": "609220",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x4dd6ff8af3cd50e43f12ad83ea21ab5fa910ffdadf465337be0476b6b49c293e",
+    "transactionHash": "0xc78186161907af5574cd669c4ffeb511afd9876cb31a09f560258ad16cb1d163",
+    "logs": [],
+    "blockNumber": 16328135,
+    "cumulativeGasUsed": "17768394",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x77D3d884FeA1E389150a26D4569b20ebA284A86d",
+    "0xA24390c62186A8D265344e914F0Fd962B81b5F13"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "3d0b4627786121738df4fdd2f0dde9e7",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.17+commit.8df45f5f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_votingEscrow\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_fSushi\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"Claimed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Expired\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"beneficiary\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"fromWeek\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"untilWeek\",\"type\":\"uint256\"}],\"name\":\"Claim\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"beneficiary\",\"type\":\"address\"}],\"name\":\"claim\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"fSushi\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lastCheckpoint\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"lastCheckpointOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"startWeek\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"votingEscrow\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"votingEscrowInterval\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"votingEscrowTotalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/FSushiAirdropsVotingEscrow.sol\":\"FSushiAirdropsVotingEscrow\"},\"evmVersion\":\"london\",\"libraries\":{\":__CACHE_BREAKER__\":\"0x00000000d41867734bbee4c6863d9255b2b06ac1\"},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[],\"viaIR\":true},\"sources\":{\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)\\n\\npragma solidity ^0.8.0;\\n\\n/**\\n * @dev Interface of the ERC20 standard as defined in the EIP.\\n */\\ninterface IERC20 {\\n    /**\\n     * @dev Emitted when `value` tokens are moved from one account (`from`) to\\n     * another (`to`).\\n     *\\n     * Note that `value` may be zero.\\n     */\\n    event Transfer(address indexed from, address indexed to, uint256 value);\\n\\n    /**\\n     * @dev Emitted when the allowance of a `spender` for an `owner` is set by\\n     * a call to {approve}. `value` is the new allowance.\\n     */\\n    event Approval(address indexed owner, address indexed spender, uint256 value);\\n\\n    /**\\n     * @dev Returns the amount of tokens in existence.\\n     */\\n    function totalSupply() external view returns (uint256);\\n\\n    /**\\n     * @dev Returns the amount of tokens owned by `account`.\\n     */\\n    function balanceOf(address account) external view returns (uint256);\\n\\n    /**\\n     * @dev Moves `amount` tokens from the caller's account to `to`.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transfer(address to, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Returns the remaining number of tokens that `spender` will be\\n     * allowed to spend on behalf of `owner` through {transferFrom}. This is\\n     * zero by default.\\n     *\\n     * This value changes when {approve} or {transferFrom} are called.\\n     */\\n    function allowance(address owner, address spender) external view returns (uint256);\\n\\n    /**\\n     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * IMPORTANT: Beware that changing an allowance with this method brings the risk\\n     * that someone may use both the old and the new allowance by unfortunate\\n     * transaction ordering. One possible solution to mitigate this race\\n     * condition is to first reduce the spender's allowance to 0 and set the\\n     * desired value afterwards:\\n     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729\\n     *\\n     * Emits an {Approval} event.\\n     */\\n    function approve(address spender, uint256 amount) external returns (bool);\\n\\n    /**\\n     * @dev Moves `amount` tokens from `from` to `to` using the\\n     * allowance mechanism. `amount` is then deducted from the caller's\\n     * allowance.\\n     *\\n     * Returns a boolean value indicating whether the operation succeeded.\\n     *\\n     * Emits a {Transfer} event.\\n     */\\n    function transferFrom(\\n        address from,\\n        address to,\\n        uint256 amount\\n    ) external returns (bool);\\n}\\n\",\"keccak256\":\"0x9750c6b834f7b43000631af5cc30001c5f547b3ceb3635488f140f60e897ea6b\",\"license\":\"MIT\"},\"@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\n// OpenZeppelin Contracts v4.4.1 (token/ERC20/extensions/IERC20Metadata.sol)\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"../IERC20.sol\\\";\\n\\n/**\\n * @dev Interface for the optional metadata functions from the ERC20 standard.\\n *\\n * _Available since v4.1._\\n */\\ninterface IERC20Metadata is IERC20 {\\n    /**\\n     * @dev Returns the name of the token.\\n     */\\n    function name() external view returns (string memory);\\n\\n    /**\\n     * @dev Returns the symbol of the token.\\n     */\\n    function symbol() external view returns (string memory);\\n\\n    /**\\n     * @dev Returns the decimals places of the token.\\n     */\\n    function decimals() external view returns (uint8);\\n}\\n\",\"keccak256\":\"0x8de418a5503946cabe331f35fe242d3201a73f67f77aaeb7110acb1f30423aca\",\"license\":\"MIT\"},\"contracts/FSushiAirdropsVotingEscrow.sol\":{\"content\":\"// SPDX-License-Identifier: BUSL-1.1\\n\\npragma solidity ^0.8.17;\\n\\nimport \\\"./interfaces/IVotingEscrow.sol\\\";\\nimport \\\"./interfaces/IFSushi.sol\\\";\\nimport \\\"./libraries/DateUtils.sol\\\";\\n\\ncontract FSushiAirdropsVotingEscrow {\\n    using DateUtils for uint256;\\n\\n    uint256 private constant INITIAL_SUPPLY_PER_WEEK = 5000e18;\\n\\n    address public immutable votingEscrow;\\n    address public immutable fSushi;\\n    uint256 public immutable startWeek;\\n    uint256 public immutable votingEscrowInterval;\\n\\n    uint256 public lastCheckpoint;\\n    mapping(address => uint256) public lastCheckpointOf;\\n    mapping(uint256 => uint256) public votingEscrowTotalSupply;\\n\\n    error Expired();\\n    error Claimed();\\n\\n    event Claim(\\n        address indexed account,\\n        uint256 amount,\\n        address indexed beneficiary,\\n        uint256 fromWeek,\\n        uint256 untilWeek\\n    );\\n\\n    constructor(address _votingEscrow, address _fSushi) {\\n        votingEscrow = _votingEscrow;\\n        fSushi = _fSushi;\\n        startWeek = block.timestamp.toWeekNumber();\\n        votingEscrowInterval = IVotingEscrow(_votingEscrow).interval();\\n    }\\n\\n    function claim(address beneficiary) external returns (uint256 amount) {\\n        IVotingEscrow(votingEscrow).checkpoint();\\n\\n        uint256 from = lastCheckpointOf[msg.sender];\\n        if (from == 0) {\\n            from = startWeek;\\n        }\\n        uint256 until = block.timestamp.toWeekNumber() + 1;\\n\\n        for (uint256 i; i < 512; ) {\\n            uint256 week = from + i;\\n            if (week >= until) break;\\n\\n            uint256 weekStart = week.toTimestamp();\\n            uint256 balance = _votingEscrowBalanceOf(msg.sender, weekStart);\\n            uint256 totalSupply = _votingEscrowTotalSupply(weekStart);\\n\\n            amount += ((INITIAL_SUPPLY_PER_WEEK >> (week - startWeek)) * balance) / totalSupply;\\n\\n            unchecked {\\n                ++i;\\n            }\\n        }\\n\\n        lastCheckpointOf[msg.sender] = until;\\n\\n        if (amount > 0) {\\n            IFSushi(fSushi).mint(beneficiary, amount);\\n\\n            emit Claim(msg.sender, amount, beneficiary, from, until);\\n        }\\n    }\\n\\n    function _votingEscrowBalanceOf(address account, uint256 timestamp) internal view returns (uint256) {\\n        uint256 epoch = IVotingEscrow(votingEscrow).userPointEpoch(account);\\n        if (epoch == 0) return 0;\\n        else {\\n            (int128 bias, int128 slope, uint256 ts, ) = IVotingEscrow(votingEscrow).userPointHistory(account, epoch);\\n            unchecked {\\n                bias -= slope * int128(int256(timestamp - ts));\\n            }\\n            if (bias < 0) bias = 0;\\n            return uint256(uint128(bias));\\n        }\\n    }\\n\\n    function _votingEscrowTotalSupply(uint256 timestamp) internal returns (uint256) {\\n        uint256 week = timestamp.toWeekNumber();\\n        if (week < lastCheckpoint) return votingEscrowTotalSupply[week];\\n\\n        lastCheckpoint = timestamp.toWeekNumber() + 1;\\n\\n        uint256 epoch = IVotingEscrow(votingEscrow).epoch();\\n        (int128 bias, int128 slope, uint256 ts, ) = IVotingEscrow(votingEscrow).pointHistory(epoch);\\n        uint256 t_i = (ts / votingEscrowInterval) * votingEscrowInterval;\\n        for (uint256 i; i < 255; i++) {\\n            t_i += votingEscrowInterval;\\n            int128 d_slope;\\n            if (t_i > timestamp) t_i = timestamp;\\n            else d_slope = IVotingEscrow(votingEscrow).slopeChanges(t_i);\\n            unchecked {\\n                bias -= slope * int128(int256(t_i - ts));\\n            }\\n            if (t_i == timestamp) break;\\n            slope += d_slope;\\n            ts = t_i;\\n        }\\n\\n        if (bias < 0) bias = 0;\\n        uint256 totalSupply = uint256(uint128(bias));\\n        votingEscrowTotalSupply[week] = totalSupply;\\n        return totalSupply;\\n    }\\n}\\n\",\"keccak256\":\"0x5643384740383d0b165065919d639c5351be8b908be36cc3b53373e12be21457\",\"license\":\"BUSL-1.1\"},\"contracts/interfaces/IFSushi.sol\":{\"content\":\"// SPDX-License-Identifier: BUSL-1.1\\n\\npragma solidity ^0.8.0;\\n\\nimport \\\"@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol\\\";\\n\\ninterface IFSushi is IERC20Metadata {\\n    error Forbidden();\\n    error Expired();\\n    error MintersLocked();\\n    error InvalidSignature();\\n\\n    event SetMinter(address indexed account, bool indexed isMinter);\\n    event LockMinters();\\n    event Checkpoint(uint256 lastCheckpoint);\\n\\n    function DOMAIN_SEPARATOR() external view returns (bytes32);\\n\\n    function startWeek() external view returns (uint256);\\n\\n    function isMinter(address account) external view returns (bool);\\n\\n    function mintersLocked() external view returns (bool);\\n\\n    function nonces(address account) external view returns (uint256);\\n\\n    function totalSupplyDuring(uint256 time) external view returns (uint256);\\n\\n    function lastCheckpoint() external view returns (uint256);\\n\\n    function setMinter(address account, bool _isMinter) external;\\n\\n    function lockMinters() external;\\n\\n    function permit(\\n        address owner,\\n        address spender,\\n        uint256 value,\\n        uint256 deadline,\\n        uint8 v,\\n        bytes32 r,\\n        bytes32 s\\n    ) external;\\n\\n    function mint(address to, uint256 amount) external;\\n\\n    function checkpointedTotalSupplyDuring(uint256 week) external returns (uint256);\\n\\n    function checkpoint() external;\\n}\\n\",\"keccak256\":\"0xcddcbb7b60b3644005a7c2c9ac10303b73a6e46a316312cd42c1fb393eb2f7e3\",\"license\":\"BUSL-1.1\"},\"contracts/interfaces/IVotingEscrow.sol\":{\"content\":\"// SPDX-License-Identifier: BUSL-1.1\\n\\npragma solidity ^0.8.0;\\n\\ninterface IVotingEscrow {\\n    error Forbidden();\\n    error Expired();\\n    error Existent();\\n    error NonExistent();\\n    error TooLate();\\n    error TooEarly();\\n    error InvalidAmount();\\n    error InvalidPath();\\n    error OutOfRange();\\n    error DiscountTooHigh();\\n    error Discounted();\\n    error NotExpired();\\n    error NotPastBlock();\\n\\n    event SetDelegate(address indexed account, bool isDelegate);\\n    event Deposit(\\n        address indexed provider,\\n        uint256 value,\\n        uint256 discount,\\n        uint256 indexed unlockTime,\\n        int128 indexed _type,\\n        uint256 ts\\n    );\\n    event Withdraw(address indexed provider, uint256 value, uint256 discount, uint256 ts);\\n    event Supply(uint256 prevSupply, uint256 supply);\\n\\n    function interval() external view returns (uint256);\\n\\n    function maxDuration() external view returns (uint256);\\n\\n    function token() external view returns (address);\\n\\n    function name() external view returns (string memory);\\n\\n    function symbol() external view returns (string memory);\\n\\n    function decimals() external view returns (uint8);\\n\\n    function isDelegate(address account) external view returns (bool);\\n\\n    function supply() external view returns (uint256);\\n\\n    function delegateAt(address account, uint256 index) external view returns (address);\\n\\n    function locked(address account)\\n        external\\n        view\\n        returns (\\n            int128 amount,\\n            int128 discount,\\n            uint256 start,\\n            uint256 end\\n        );\\n\\n    function epoch() external view returns (uint256);\\n\\n    function pointHistory(uint256 epoch)\\n        external\\n        view\\n        returns (\\n            int128 bias,\\n            int128 slope,\\n            uint256 ts,\\n            uint256 blk\\n        );\\n\\n    function userPointHistory(address account, uint256 epoch)\\n        external\\n        view\\n        returns (\\n            int128 bias,\\n            int128 slope,\\n            uint256 ts,\\n            uint256 blk\\n        );\\n\\n    function userPointEpoch(address account) external view returns (uint256);\\n\\n    function slopeChanges(uint256 epoch) external view returns (int128);\\n\\n    function delegateLength(address addr) external view returns (uint256);\\n\\n    function getLastUserSlope(address addr) external view returns (int128);\\n\\n    function getCheckpointTime(address _addr, uint256 _idx) external view returns (uint256);\\n\\n    function unlockTime(address _addr) external view returns (uint256);\\n\\n    function setDelegate(address account, bool _isDelegate) external;\\n\\n    function checkpoint() external;\\n\\n    function depositFor(address _addr, uint256 _value) external;\\n\\n    function createLockFor(\\n        address _addr,\\n        uint256 _value,\\n        uint256 _discount,\\n        uint256 _duration\\n    ) external;\\n\\n    function createLock(uint256 _value, uint256 _duration) external;\\n\\n    function increaseAmountFor(\\n        address _addr,\\n        uint256 _value,\\n        uint256 _discount\\n    ) external;\\n\\n    function increaseAmount(uint256 _value) external;\\n\\n    function increaseUnlockTime(uint256 _duration) external;\\n\\n    function withdraw() external;\\n\\n    function balanceOf(address addr) external view returns (uint256);\\n\\n    function balanceOf(address addr, uint256 _t) external view returns (uint256);\\n\\n    function balanceOfAt(address addr, uint256 _block) external view returns (uint256);\\n\\n    function totalSupply() external view returns (uint256);\\n\\n    function totalSupply(uint256 t) external view returns (uint256);\\n\\n    function totalSupplyAt(uint256 _block) external view returns (uint256);\\n}\\n\",\"keccak256\":\"0x6df0ffff68b9d1711f7eb47f3d33b75d2e1686e8ad3f5070623e8426fa16a81f\",\"license\":\"BUSL-1.1\"},\"contracts/libraries/DateUtils.sol\":{\"content\":\"// SPDX-License-Identifier: BUSL-1.1\\n\\npragma solidity ^0.8.17;\\n\\nuint256 constant WEEK = 1 weeks;\\n\\nlibrary DateUtils {\\n    function toWeekNumber(uint256 timestamp) internal pure returns (uint256) {\\n        return timestamp / WEEK;\\n    }\\n\\n    function toTimestamp(uint256 weekNumber) internal pure returns (uint256) {\\n        return weekNumber * WEEK;\\n    }\\n}\\n\",\"keccak256\":\"0x1f6685854a201369d06bcbaf873bc0a39ac0c4f40a22f06a5ac86b9b2cf5542f\",\"license\":\"BUSL-1.1\"}},\"version\":1}",
+  "bytecode": "0x610100806040523461012757604081610b6d8038038091610020828561012c565b833981010312610127576020816100438261003c600495610165565b9201610165565b608082905260a05262093a80420460c05260405163947a36fb60e01b815292839182906001600160a01b03165afa90811561011b576000916100e7575b5060e0526040516109f3908161017a823960805181818161019701528181610230015281816105c30152610724015260a051818181609001526102ee015260c051818181610107015281816102a10152610474015260e05181818161014201526107990152f35b906020823d8211610113575b816101006020938361012c565b8101031261011057505138610080565b80fd5b3d91506100f3565b6040513d6000823e3d90fd5b600080fd5b601f909101601f19168101906001600160401b0382119082101761014f57604052565b634e487b7160e01b600052604160045260246000fd5b51906001600160a01b03821682036101275756fe608060408181526004918236101561001657600080fd5b600092833560e01c9182631e83409a14610200575081632e9cf8a0146101c65781634f2bfe5b14610182578163d32e81a514610165578163e703057b1461012a578163eddf2d21146100ef578163f4d4bae4146100c3575063ffe066a01461007d57600080fd5b346100bf57816003193601126100bf57517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b5080fd5b9050346100eb5760203660031901126100eb5760209282913581526002845220549051908152f35b8280fd5b5050346100bf57816003193601126100bf57602090517f00000000000000000000000000000000000000000000000000000000000000008152f35b5050346100bf57816003193601126100bf57602090517f00000000000000000000000000000000000000000000000000000000000000008152f35b5050346100bf57816003193601126100bf57602091549051908152f35b5050346100bf57816003193601126100bf57517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b9050346100eb5760203660031901126100eb57356001600160a01b038116908190036100eb57828291602094526001845220549051908152f35b929150346104bb5760203660031901126104bb576001600160a01b03813581811692908381036104b757869587847f000000000000000000000000000000000000000000000000000000000000000016803b156100bf57848383819363c2c4c5c160e01b83525af180156104ad5761049a575b503387526001918260205285882054938415610472575b62093a80938442049481860180961161045f578a907f00000000000000000000000000000000000000000000000000000000000000005b61020083106103b9575b505050338a5260205283878a2055876102e9575b6020888851908152f35b9088917f000000000000000000000000000000000000000000000000000000000000000016803b156100eb5787516340c10f1960e01b81526001600160a01b0390941691840191825260208201899052839182908490829060400103925af180156103af57610397575b506020955083519185835286830152838201527ff8058b3b391f4252dfeb3d89006cd2807a083271dc03cd5c709ecd3f8b6caa4160603392a33880808080806102df565b6103a187916104bf565b6103ab5785610353565b8580fd5b85513d89823e3d90fd5b90919a6103c68c8a61050b565b8881101561045857838102818104851482151715610443576103f16103eb82336105a4565b916106f1565b9184810390811161042f576104269261041b88959369010f0cf064dd59200000610420941c61052e565b610541565b9061050b565b9b0191906102c1565b50634e487b7160e01b8f526011885260248ffd5b601188634e487b7160e01b6000525260246000fd5b509a6102cb565b634e487b7160e01b8b526011845260248bfd5b7f0000000000000000000000000000000000000000000000000000000000000000945061028a565b6104a6909791976104bf565b9538610273565b86513d8a823e3d90fd5b8680fd5b8380fd5b67ffffffffffffffff81116104d357604052565b634e487b7160e01b600052604160045260246000fd5b90601f8019910116810190811067ffffffffffffffff8211176104d357604052565b9190820180921161051857565b634e487b7160e01b600052601160045260246000fd5b8181029291811591840414171561051857565b811561054b570490565b634e487b7160e01b600052601260045260246000fd5b519081600f0b820361056f57565b600080fd5b919082608091031261056f5761058982610561565b9161059660208201610561565b916060604083015192015190565b6040516381fc83bb60e01b81526001600160a01b0382811660048301527f0000000000000000000000000000000000000000000000000000000000000000169190602081602481865afa9081156106b1576000916106bd575b508061060c5750505050600090565b604051630d36406960e21b81526001600160a01b03929092166004830152602482015290608090829060449082905afa80156106b15760009283928492610679575b5003600f0b02600f0b9003600f0b60008112610671575b6001600160801b031690565b506000610665565b9150925061069e915060803d81116106aa575b61069681836104e9565b810190610574565b5091929091903861064e565b503d61068c565b6040513d6000823e3d90fd5b906020823d82116106e9575b816106d6602093836104e9565b810103126106e6575051386105fd565b80fd5b3d91506106c9565b62093a808104600091825482106109ad57600182018083116109995783556040805163900cf0cf60e01b815260209491927f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316600487848281855afa93841561098f57859461095c575b50855193638ad4c44760e01b8552818501526024916080858481845afa90811561095257869487958893610921575b96508a95927f000000000000000000000000000000000000000000000000000000000000000092906107cd846107c88184610541565b61052e565b948a955b60ff871061080d575b505050505050505050508181600f0b12610806575b6001600160801b0360029116948594835252205590565b50806107ef565b8561081b919b999a9b61050b565b808c9b8682116000146108aa5750505083975b600f928903830b8202830b9003820b998489146108a257820b910b0160016001607f1b0319811260016001607f1b0382131761089057928694600019811461087e576001019490938d98976107d1565b634e487b7160e01b8b5260118752888bfd5b634e487b7160e01b8a5260118652878afd5b8e99506107da565b9091999b508d519163f52a36f760e01b835289830152818b81875afa908115610917578f8d926108dd575b50509961082e565b90809250813d8311610910575b6108f481836104e9565b8101031261090c5761090590610561565b388f6108d5565b8b80fd5b503d6108ea565b8d513d8e823e3d90fd5b509150946107c89394506109429060803d81116106aa5761069681836104e9565b5096919290969287969550610792565b87513d88823e3d90fd5b9093508781813d8311610988575b61097481836104e9565b8101031261098457519238610763565b8480fd5b503d61096a565b86513d87823e3d90fd5b634e487b7160e01b84526011600452602484fd5b508152600260205260409020549056fea264697066735822122011e13862f22568b00c6beaae04fc1df546395f6b7095c46b68874d62397b68f564736f6c63430008110033",
+  "deployedBytecode": "0x608060408181526004918236101561001657600080fd5b600092833560e01c9182631e83409a14610200575081632e9cf8a0146101c65781634f2bfe5b14610182578163d32e81a514610165578163e703057b1461012a578163eddf2d21146100ef578163f4d4bae4146100c3575063ffe066a01461007d57600080fd5b346100bf57816003193601126100bf57517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b5080fd5b9050346100eb5760203660031901126100eb5760209282913581526002845220549051908152f35b8280fd5b5050346100bf57816003193601126100bf57602090517f00000000000000000000000000000000000000000000000000000000000000008152f35b5050346100bf57816003193601126100bf57602090517f00000000000000000000000000000000000000000000000000000000000000008152f35b5050346100bf57816003193601126100bf57602091549051908152f35b5050346100bf57816003193601126100bf57517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b9050346100eb5760203660031901126100eb57356001600160a01b038116908190036100eb57828291602094526001845220549051908152f35b929150346104bb5760203660031901126104bb576001600160a01b03813581811692908381036104b757869587847f000000000000000000000000000000000000000000000000000000000000000016803b156100bf57848383819363c2c4c5c160e01b83525af180156104ad5761049a575b503387526001918260205285882054938415610472575b62093a80938442049481860180961161045f578a907f00000000000000000000000000000000000000000000000000000000000000005b61020083106103b9575b505050338a5260205283878a2055876102e9575b6020888851908152f35b9088917f000000000000000000000000000000000000000000000000000000000000000016803b156100eb5787516340c10f1960e01b81526001600160a01b0390941691840191825260208201899052839182908490829060400103925af180156103af57610397575b506020955083519185835286830152838201527ff8058b3b391f4252dfeb3d89006cd2807a083271dc03cd5c709ecd3f8b6caa4160603392a33880808080806102df565b6103a187916104bf565b6103ab5785610353565b8580fd5b85513d89823e3d90fd5b90919a6103c68c8a61050b565b8881101561045857838102818104851482151715610443576103f16103eb82336105a4565b916106f1565b9184810390811161042f576104269261041b88959369010f0cf064dd59200000610420941c61052e565b610541565b9061050b565b9b0191906102c1565b50634e487b7160e01b8f526011885260248ffd5b601188634e487b7160e01b6000525260246000fd5b509a6102cb565b634e487b7160e01b8b526011845260248bfd5b7f0000000000000000000000000000000000000000000000000000000000000000945061028a565b6104a6909791976104bf565b9538610273565b86513d8a823e3d90fd5b8680fd5b8380fd5b67ffffffffffffffff81116104d357604052565b634e487b7160e01b600052604160045260246000fd5b90601f8019910116810190811067ffffffffffffffff8211176104d357604052565b9190820180921161051857565b634e487b7160e01b600052601160045260246000fd5b8181029291811591840414171561051857565b811561054b570490565b634e487b7160e01b600052601260045260246000fd5b519081600f0b820361056f57565b600080fd5b919082608091031261056f5761058982610561565b9161059660208201610561565b916060604083015192015190565b6040516381fc83bb60e01b81526001600160a01b0382811660048301527f0000000000000000000000000000000000000000000000000000000000000000169190602081602481865afa9081156106b1576000916106bd575b508061060c5750505050600090565b604051630d36406960e21b81526001600160a01b03929092166004830152602482015290608090829060449082905afa80156106b15760009283928492610679575b5003600f0b02600f0b9003600f0b60008112610671575b6001600160801b031690565b506000610665565b9150925061069e915060803d81116106aa575b61069681836104e9565b810190610574565b5091929091903861064e565b503d61068c565b6040513d6000823e3d90fd5b906020823d82116106e9575b816106d6602093836104e9565b810103126106e6575051386105fd565b80fd5b3d91506106c9565b62093a808104600091825482106109ad57600182018083116109995783556040805163900cf0cf60e01b815260209491927f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316600487848281855afa93841561098f57859461095c575b50855193638ad4c44760e01b8552818501526024916080858481845afa90811561095257869487958893610921575b96508a95927f000000000000000000000000000000000000000000000000000000000000000092906107cd846107c88184610541565b61052e565b948a955b60ff871061080d575b505050505050505050508181600f0b12610806575b6001600160801b0360029116948594835252205590565b50806107ef565b8561081b919b999a9b61050b565b808c9b8682116000146108aa5750505083975b600f928903830b8202830b9003820b998489146108a257820b910b0160016001607f1b0319811260016001607f1b0382131761089057928694600019811461087e576001019490938d98976107d1565b634e487b7160e01b8b5260118752888bfd5b634e487b7160e01b8a5260118652878afd5b8e99506107da565b9091999b508d519163f52a36f760e01b835289830152818b81875afa908115610917578f8d926108dd575b50509961082e565b90809250813d8311610910575b6108f481836104e9565b8101031261090c5761090590610561565b388f6108d5565b8b80fd5b503d6108ea565b8d513d8e823e3d90fd5b509150946107c89394506109429060803d81116106aa5761069681836104e9565b5096919290969287969550610792565b87513d88823e3d90fd5b9093508781813d8311610988575b61097481836104e9565b8101031261098457519238610763565b8480fd5b503d61096a565b86513d87823e3d90fd5b634e487b7160e01b84526011600452602484fd5b508152600260205260409020549056fea264697066735822122011e13862f22568b00c6beaae04fc1df546395f6b7095c46b68874d62397b68f564736f6c63430008110033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 8972,
+        "contract": "contracts/FSushiAirdropsVotingEscrow.sol:FSushiAirdropsVotingEscrow",
+        "label": "lastCheckpoint",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 8976,
+        "contract": "contracts/FSushiAirdropsVotingEscrow.sol:FSushiAirdropsVotingEscrow",
+        "label": "lastCheckpointOf",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_mapping(t_address,t_uint256)"
+      },
+      {
+        "astId": 8980,
+        "contract": "contracts/FSushiAirdropsVotingEscrow.sol:FSushiAirdropsVotingEscrow",
+        "label": "votingEscrowTotalSupply",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_mapping(t_uint256,t_uint256)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_mapping(t_address,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_mapping(t_uint256,t_uint256)": {
+        "encoding": "mapping",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => uint256)",
+        "numberOfBytes": "32",
+        "value": "t_uint256"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}
