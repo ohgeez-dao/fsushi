@@ -119,8 +119,8 @@ contract SousChef is Ownable, ISousChef {
                 IFSushiRestaurant(restaurant).checkpointedTotalAssetsDuring(week - 1);
             // emission rate decreases 1% every week
             uint256 rewards = (circulatingSupply * 99) / 100;
-            // 10x bonus is given only for the first week
-            if (week == startWeek + 1) {
+            // 10x bonus is given only for the first 2 weeks
+            if (week == startWeek + 2) {
                 rewards /= BONUS_MULTIPLIER;
             }
             weeklyRewards[week] = rewards;

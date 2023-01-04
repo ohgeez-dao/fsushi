@@ -113,24 +113,45 @@ describe("SousChef", function () {
         await mineAtWeekStart(week0);
         expect(await chef.weeklyRewards(week0)).to.be.equal(REWARDS_FOR_INITIAL_WEEK);
 
+        let total = REWARDS_FOR_INITIAL_WEEK;
         await fSushi.mint(alice.address, REWARDS_FOR_INITIAL_WEEK);
+        expect(await fSushi.totalSupply()).to.be.equal(total);
+
         await mineAtWeekStart(week0 + 1);
         expect(await chef.weeklyRewards(week0 + 1)).to.be.equal(0);
 
         await chef.checkpoint();
         expect(await chef.lastCheckpoint()).to.be.equal(week0 + 2);
-        let rewards = onePercentDecreased(REWARDS_FOR_INITIAL_WEEK.div(10));
-        expect(await chef.weeklyRewards(week0 + 1)).to.be.equal(rewards);
+        let weekly = onePercentDecreased(REWARDS_FOR_INITIAL_WEEK);
+        expect(await chef.weeklyRewards(week0 + 1)).to.be.equal(weekly);
 
-        await fSushi.connect(alice).approve(fSushiBar.address, REWARDS_FOR_INITIAL_WEEK.div(2));
-        await fSushiBar.connect(alice).deposit(REWARDS_FOR_INITIAL_WEEK.div(2), 1, alice.address);
+        const locked = REWARDS_FOR_INITIAL_WEEK.div(2);
+        await fSushi.connect(alice).approve(fSushiBar.address, locked);
+        await fSushiBar.connect(alice).deposit(locked, 1, alice.address);
 
-        await fSushi.mint(alice.address, rewards);
+        total = total.add(weekly);
+        await fSushi.mint(alice.address, weekly);
+        expect(await fSushi.totalSupply()).to.be.equal(total);
+
         await mineAtWeekStart(week0 + 2);
+        expect(await chef.weeklyRewards(week0 + 2)).to.be.equal(0);
 
         await chef.checkpoint();
         expect(await chef.lastCheckpoint()).to.be.equal(week0 + 3);
-        rewards = onePercentDecreased(rewards.add(REWARDS_FOR_INITIAL_WEEK.div(2)));
-        expect(await chef.weeklyRewards(week0 + 2)).to.be.equal(rewards);
+        // From week2, 10x boost gets away
+        weekly = onePercentDecreased(total.sub(locked)).div(10);
+        expect(await chef.weeklyRewards(week0 + 2)).to.be.equal(weekly);
+
+        total = total.add(weekly);
+        await fSushi.mint(alice.address, weekly);
+        expect(await fSushi.totalSupply()).to.be.equal(total);
+
+        await mineAtWeekStart(week0 + 3);
+        expect(await chef.weeklyRewards(week0 + 3)).to.be.equal(0);
+
+        await chef.checkpoint();
+        expect(await chef.lastCheckpoint()).to.be.equal(week0 + 4);
+        weekly = onePercentDecreased(total.sub(locked));
+        expect(await chef.weeklyRewards(week0 + 3)).to.be.equal(weekly);
     });
 });
