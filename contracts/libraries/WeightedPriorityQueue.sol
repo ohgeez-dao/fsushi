@@ -1,5 +1,6 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+// SPDX-License-Identifier: BUSL-1.1
+
+pragma solidity ^0.8.17;
 
 // modified https://github.com/MihanixA/SummingPriorityQueue/blob/master/contracts/SummingPriorityQueue.sol
 library WeightedPriorityQueue {
@@ -20,14 +21,14 @@ library WeightedPriorityQueue {
         _;
     }
 
-    function top(Heap storage self) public view notEmpty(self) returns (uint256) {
+    function top(Heap storage self) internal view notEmpty(self) returns (uint256) {
         return self.timestamps[1];
     }
 
     /**
      * @dev average time complexity: O(log n), worst-case time complexity: O(n)
      */
-    function enqueuedTotalAmount(Heap storage self, uint256 timestamp) public view returns (uint256 amount) {
+    function enqueuedTotalAmount(Heap storage self, uint256 timestamp) internal view returns (uint256 amount) {
         return _dfsAmount(self, amount, timestamp, 1);
     }
 
@@ -48,7 +49,7 @@ library WeightedPriorityQueue {
     /**
      * @dev average time complexity: O(log n), worst-case time complexity: O(n)
      */
-    function enqueuedWeightedAmount(Heap storage self, uint256 timestamp) public view returns (uint256 amount) {
+    function enqueuedWeightedAmount(Heap storage self, uint256 timestamp) internal view returns (uint256 amount) {
         return _dfsWeightedAmount(self, amount, timestamp, 1);
     }
 
@@ -72,7 +73,7 @@ library WeightedPriorityQueue {
         uint256 timestamp,
         uint256 amount,
         uint256 weight
-    ) public {
+    ) internal {
         if (self.timestamps.length == 0) self.timestamps.push(0); // initialize
 
         self.timestamps.push(timestamp);
@@ -87,7 +88,7 @@ library WeightedPriorityQueue {
     }
 
     function dequeue(Heap storage self)
-        public
+        internal
         notEmpty(self)
         returns (
             uint256 timestamp,
@@ -125,7 +126,7 @@ library WeightedPriorityQueue {
         Heap storage self,
         uint256 timestamp,
         uint256 weightedAmountMax
-    ) public returns (uint256 amountDequeued, uint256 weightedAmountDequeued) {
+    ) internal returns (uint256 amountDequeued, uint256 weightedAmountDequeued) {
         while (self.timestamps.length > 1) {
             uint256 _top = top(self);
             if (_top < timestamp) break;
@@ -138,7 +139,7 @@ library WeightedPriorityQueue {
         }
     }
 
-    function dequeueAll(Heap storage self, uint256 timestamp) public {
+    function dequeueAll(Heap storage self, uint256 timestamp) internal {
         while (self.timestamps.length > 1 && top(self) < timestamp) dequeue(self);
     }
 }
