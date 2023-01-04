@@ -37,6 +37,7 @@ const setupTest = async deployTimestamp => {
 
     const FS = await ethers.getContractFactory("FSushi");
     const fSushi = (await FS.deploy()) as FSushi;
+    await fSushi.setMinter(deployer.address, true);
 
     const FSB = await ethers.getContractFactory("FSushiBar");
     const fSushiBar = (await FSB.deploy(fSushi.address)) as FSushiBar;
@@ -70,12 +71,12 @@ describe("SousChef", function () {
     });
 
     it("should create FSushiBill", async function () {
-        const deployTime = Math.floor(Date.UTC(2023, 0, 1) / 1000);
+        const deployTime = Math.floor(Date.UTC(2024, 0, 1) / 1000);
         const { tokens, sushi, chef } = await setupTest(deployTime);
 
         const week0 = toWeekNumber(deployTime) + 1;
         expect(await chef.startWeek()).to.be.equal(week0);
-        expect(await chef.lastCheckpoint()).to.be.equal(week0);
+        expect(await chef.lastCheckpoint()).to.be.equal(week0 + 1);
 
         const pid = 0;
         await sushi.factory.createPair(tokens.sushi.address, tokens.weth.address);
@@ -98,7 +99,7 @@ describe("SousChef", function () {
     });
 
     it("should checkpoint weeklyRewards", async function () {
-        const deployTime = Math.floor(Date.UTC(2023, 0, 1) / 1000);
+        const deployTime = Math.floor(Date.UTC(2024, 0, 1) / 1000);
         const { alice, tokens, sushi, fSushi, fSushiBar, chef } = await setupTest(deployTime);
 
         const week0 = toWeekNumber(deployTime) + 1;
@@ -117,16 +118,18 @@ describe("SousChef", function () {
         expect(await chef.weeklyRewards(week0 + 1)).to.be.equal(0);
 
         await chef.checkpoint();
+        expect(await chef.lastCheckpoint()).to.be.equal(week0 + 2);
         let rewards = onePercentDecreased(REWARDS_FOR_INITIAL_WEEK.div(10));
         expect(await chef.weeklyRewards(week0 + 1)).to.be.equal(rewards);
 
         await fSushi.connect(alice).approve(fSushiBar.address, REWARDS_FOR_INITIAL_WEEK.div(2));
-        await fSushiBar.connect(alice).deposit(REWARDS_FOR_INITIAL_WEEK.div(2), alice.address);
+        await fSushiBar.connect(alice).deposit(REWARDS_FOR_INITIAL_WEEK.div(2), 1, alice.address);
 
         await fSushi.mint(alice.address, rewards);
         await mineAtWeekStart(week0 + 2);
 
         await chef.checkpoint();
+        expect(await chef.lastCheckpoint()).to.be.equal(week0 + 3);
         rewards = onePercentDecreased(rewards.add(REWARDS_FOR_INITIAL_WEEK.div(2)));
         expect(await chef.weeklyRewards(week0 + 2)).to.be.equal(rewards);
     });

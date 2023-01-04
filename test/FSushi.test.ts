@@ -13,6 +13,7 @@ const setupTest = async deployTimestamp => {
 
     const FS = await ethers.getContractFactory("FSushi");
     const fSushi = (await FS.deploy()) as FSushi;
+    await fSushi.setMinter(deployer.address, true);
 
     return {
         deployer,
@@ -32,7 +33,7 @@ describe("FSushi", function () {
     });
 
     it("should mint and checkpoint", async function () {
-        const deployTime = Math.floor(Date.UTC(2023, 0, 1) / 1000);
+        const deployTime = Math.floor(Date.UTC(2024, 0, 1) / 1000);
         const { alice, bob, carol, fSushi } = await setupTest(deployTime);
 
         const startWeek = toWeekNumber(deployTime) + 1;

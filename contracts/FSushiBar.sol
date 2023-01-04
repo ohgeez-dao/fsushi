@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IFSushiBar.sol";
 import "./interfaces/IFSushi.sol";
@@ -12,85 +12,175 @@ import "./libraries/DateUtils.sol";
 /**
  * @notice FSushiBar is an extension of ERC4626 with the addition of vesting period for locks
  */
-contract FSushiBar is ERC4626, IFSushiBar {
+contract FSushiBar is IFSushiBar {
     using WeightedPriorityQueue for WeightedPriorityQueue.Heap;
+    using SafeERC20 for IERC20;
     using Math for uint256;
     using DateUtils for uint256;
 
+    uint8 public constant decimals = 18;
+    string public constant name = "Flash SushiBar";
+    string public constant symbol = "xfSUSHI";
     uint256 internal constant MINIMUM_WEEKS = 1;
     uint256 internal constant MAXIMUM_WEEKS = 104; // almost 2 years
 
+    address public immutable override asset;
     uint256 public immutable override startWeek;
 
-    /**
-     * @notice timestamp when users lastly deposited
-     */
-    mapping(address => uint256) public override lastDeposit; // timestamp
+    mapping(address => uint256) public override balanceOf;
+    uint256 public override totalSupply;
 
     mapping(address => WeightedPriorityQueue.Heap) internal _locks;
 
+    uint256 public override totalAssets;
     /**
      * @dev this is guaranteed to be correct up until the last week
      * @return minimum number of staked total assets during the whole week
      */
-    mapping(uint256 => uint256) public override lockedTotalBalanceDuring;
+    mapping(uint256 => uint256) public override totalAssetsDuring;
     /**
-     * @notice lockedTotalBalanceDuring is guaranteed to be correct before this week
+     * @notice totalAssetsDuring is guaranteed to be correct before this week
      */
     uint256 public override lastCheckpoint; // week
+    mapping(address => uint256) public override userAssets;
     /**
      * @dev this is guaranteed to be correct up until the last week
      * @return minimum number of staked assets of account during the whole week
      */
-    mapping(address => mapping(uint256 => uint256)) public override lockedUserBalanceDuring;
+    mapping(address => mapping(uint256 => uint256)) public override userAssetsDuring;
     /**
-     * @notice lockedUserBalanceDuring is guaranteed to be correct before this week (exclusive)
+     * @notice userAssetsDuring is guaranteed to be correct before this week (exclusive)
      */
     mapping(address => uint256) public override lastUserCheckpoint; // week
 
-    constructor(address fSushi) ERC4626(IERC20(fSushi)) ERC20("Flash SushiBar", "xfSUSHI") {
-        uint256 nextWeek = block.timestamp.toWeekNumber() + 1;
-        startWeek = nextWeek;
-        lastCheckpoint = nextWeek;
-    }
+    uint256 internal _totalPower;
 
     modifier validWeeks(uint256 _weeks) {
         if (_weeks < MINIMUM_WEEKS || _weeks > MAXIMUM_WEEKS) revert InvalidDuration();
         _;
     }
 
-    function maxWithdraw(address owner) public view override(ERC4626, IERC4626) returns (uint256) {
-        return _convertToAssets(maxRedeem(owner), Math.Rounding.Down);
+    constructor(address fSushi) {
+        asset = fSushi;
+
+        uint256 nextWeek = block.timestamp.toWeekNumber() + 1;
+        startWeek = nextWeek;
+        lastCheckpoint = nextWeek;
     }
 
-    function maxRedeem(address owner) public view override(ERC4626, IERC4626) returns (uint256) {
-        return _locks[owner].enqueuedWeightedAmount(block.timestamp);
+    function maxDeposit() public view override returns (uint256) {
+        return (totalAssets > 0 || totalSupply == 0) ? type(uint256).max : 0;
     }
 
-    function previewDeposit(uint256 assets) public view override(ERC4626, IERC4626) returns (uint256) {
-        return previewDeposit(assets, MINIMUM_WEEKS);
+    function previewDeposit(uint256 assets, uint256 _weeks)
+        public
+        view
+        override
+        validWeeks(_weeks)
+        returns (uint256 shares)
+    {
+        uint256 power = _toPower(assets, _weeks);
+        uint256 supply = totalSupply;
+        return (power == 0 || supply == 0) ? power : power.mulDiv(supply, _totalPower, Math.Rounding.Down);
     }
 
-    function previewDeposit(uint256 assets, uint256 _weeks) public view override validWeeks(_weeks) returns (uint256) {
-        return _convertToShares(assets.mulDiv(_weeks, MAXIMUM_WEEKS), Math.Rounding.Down);
+    function maxWithdraw(address owner) public view override returns (uint256 shares, uint256 assets) {
+        return previewWithdraw(owner, block.timestamp);
     }
 
-    function previewMint(uint256 shares) public view override(ERC4626, IERC4626) returns (uint256) {
-        return previewMint(shares, MINIMUM_WEEKS);
+    function previewWithdraw(address owner, uint256 expiry)
+        public
+        view
+        override
+        returns (uint256 shares, uint256 assets)
+    {
+        (, shares) = _locks[owner].enqueued(expiry);
+        assets = _toAssets(shares);
     }
 
-    function previewMint(uint256 shares, uint256 _weeks) public view override validWeeks(_weeks) returns (uint256) {
-        return _convertToAssets(shares.mulDiv(MAXIMUM_WEEKS, _weeks), Math.Rounding.Up);
+    function _toPower(uint256 assets, uint256 _weeks) internal pure returns (uint256) {
+        return assets.mulDiv(_weeks, MAXIMUM_WEEKS, Math.Rounding.Up);
     }
 
-    function checkpointedLockedTotalBalanceDuring(uint256 week) external override returns (uint256) {
+    function _toAssets(uint256 shares) internal view virtual returns (uint256 assets) {
+        uint256 supply = totalSupply;
+        return (supply == 0) ? shares : shares.mulDiv(totalAssets, supply, Math.Rounding.Down);
+    }
+
+    function depositSigned(
+        uint256 assets,
+        uint256 _weeks,
+        address beneficiary,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public override returns (uint256) {
+        IFSushi(asset).permit(msg.sender, address(this), assets, deadline, v, r, s);
+
+        return deposit(assets, _weeks, beneficiary);
+    }
+
+    function deposit(
+        uint256 assets,
+        uint256 _weeks,
+        address beneficiary
+    ) public override returns (uint256) {
+        if (assets > maxDeposit()) revert Bankrupt();
+
+        uint256 shares = previewDeposit(assets, _weeks);
+
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), assets);
+        _mint(beneficiary, shares);
+
+        uint256 power = _toPower(assets, _weeks);
+        _locks[msg.sender].enqueue(block.timestamp + _weeks * (1 weeks), power, shares);
+        _totalPower += power;
+
+        userCheckpoint(msg.sender);
+
+        uint256 week = block.timestamp.toWeekNumber();
+        totalAssets += assets;
+        totalAssetsDuring[week] += assets;
+        userAssets[msg.sender] += assets;
+        userAssetsDuring[msg.sender][week] += assets;
+
+        emit Deposit(msg.sender, beneficiary, shares, assets);
+
+        return shares;
+    }
+
+    function withdraw(uint256 expiry, address beneficiary) public override returns (uint256) {
+        (uint256 power, uint256 shares) = _locks[msg.sender].drain(expiry);
+        if (shares == 0) revert NotExpired();
+
+        uint256 assets = _toAssets(shares);
+        _totalPower -= power;
+
+        _burn(msg.sender, shares);
+        IERC20(asset).safeTransfer(beneficiary, assets);
+
+        userCheckpoint(msg.sender);
+
+        uint256 week = block.timestamp.toWeekNumber();
+        totalAssets -= assets;
+        totalAssetsDuring[week] -= assets;
+        userAssets[msg.sender] -= assets;
+        userAssetsDuring[msg.sender][week] -= assets;
+
+        emit Withdraw(msg.sender, beneficiary, shares, assets);
+
+        return shares;
+    }
+
+    function checkpointedTotalAssetsDuring(uint256 week) external override returns (uint256) {
         checkpoint();
-        return lockedTotalBalanceDuring[week];
+        return totalAssetsDuring[week];
     }
 
-    function checkpointedLockedUserBalanceDuring(address account, uint256 week) external override returns (uint256) {
+    function checkpointedUserAssetsDuring(address account, uint256 week) external override returns (uint256) {
         checkpoint();
-        return lockedUserBalanceDuring[account][week];
+        return userAssetsDuring[account][week];
     }
 
     /**
@@ -105,7 +195,7 @@ contract FSushiBar is ERC4626, IFSushiBar {
             uint256 week = from + i;
             if (until <= week) break;
 
-            lockedTotalBalanceDuring[week + 1] = lockedTotalBalanceDuring[week];
+            totalAssetsDuring[week + 1] = totalAssetsDuring[week];
 
             unchecked {
                 ++i;
@@ -132,7 +222,7 @@ contract FSushiBar is ERC4626, IFSushiBar {
             uint256 week = from + i;
             if (until <= week) break;
 
-            lockedUserBalanceDuring[account][week + 1] = lockedUserBalanceDuring[account][week];
+            userAssetsDuring[account][week + 1] = userAssetsDuring[account][week];
 
             unchecked {
                 ++i;
@@ -142,143 +232,27 @@ contract FSushiBar is ERC4626, IFSushiBar {
         lastUserCheckpoint[account] = until;
     }
 
-    function depositSigned(
-        uint256 assets,
-        address receiver,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external override returns (uint256) {
-        return depositSigned(assets, MINIMUM_WEEKS, receiver, deadline, v, r, s);
+    function _mint(address account, uint256 amount) internal {
+        if (account == address(0)) revert InvalidAccount();
+
+        totalSupply += amount;
+        unchecked {
+            balanceOf[account] += amount;
+        }
+
+        emit Transfer(address(0), account, amount);
     }
 
-    function depositSigned(
-        uint256 assets,
-        uint256 _weeks,
-        address receiver,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public override returns (uint256) {
-        IFSushi(asset()).permit(msg.sender, address(this), assets, deadline, v, r, s);
+    function _burn(address account, uint256 amount) internal {
+        if (account == address(0)) revert InvalidAccount();
 
-        return deposit(assets, _weeks, receiver);
-    }
+        uint256 balance = balanceOf[account];
+        if (balance < amount) revert NotEnoughBalance();
+        unchecked {
+            balanceOf[account] = balance - amount;
+            totalSupply -= amount;
+        }
 
-    function mintSigned(
-        uint256 shares,
-        address receiver,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external override returns (uint256) {
-        return mintSigned(shares, MINIMUM_WEEKS, receiver, deadline, v, r, s);
-    }
-
-    function mintSigned(
-        uint256 shares,
-        uint256 _weeks,
-        address receiver,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public override returns (uint256) {
-        IFSushi(asset()).permit(msg.sender, address(this), previewMint(shares), deadline, v, r, s);
-
-        return mint(shares, _weeks, receiver);
-    }
-
-    function deposit(uint256 assets, address receiver) public override(ERC4626, IERC4626) returns (uint256) {
-        return deposit(assets, MINIMUM_WEEKS, receiver);
-    }
-
-    function deposit(
-        uint256 assets,
-        uint256 _weeks,
-        address receiver
-    ) public override validWeeks(_weeks) returns (uint256) {
-        require(assets <= maxDeposit(receiver), "ERC4626: deposit more than max");
-
-        uint256 shares = previewDeposit(assets, _weeks);
-        _deposit(msg.sender, receiver, assets, shares);
-        _locks[msg.sender].enqueue(block.timestamp + _weeks * (1 weeks), assets, _weeks);
-
-        return shares;
-    }
-
-    function mint(uint256 shares, address receiver) public override(ERC4626, IERC4626) returns (uint256) {
-        return mint(shares, MINIMUM_WEEKS, receiver);
-    }
-
-    function mint(
-        uint256 shares,
-        uint256 _weeks,
-        address receiver
-    ) public override validWeeks(_weeks) returns (uint256) {
-        require(shares <= maxMint(receiver), "ERC4626: mint more than max");
-
-        uint256 assets = previewMint(shares, _weeks);
-        _deposit(msg.sender, receiver, assets, shares);
-        _locks[msg.sender].enqueue(block.timestamp + _weeks * (1 weeks), assets, _weeks);
-
-        return assets;
-    }
-
-    function _deposit(
-        address caller,
-        address receiver,
-        uint256 assets,
-        uint256 shares
-    ) internal override {
-        super._deposit(caller, receiver, assets, shares);
-
-        userCheckpoint(msg.sender);
-
-        uint256 week = block.timestamp.toWeekNumber();
-        lockedTotalBalanceDuring[week] += assets;
-        lockedUserBalanceDuring[msg.sender][week] += assets;
-        lastDeposit[caller] = block.timestamp;
-    }
-
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) public override(ERC4626, IERC4626) returns (uint256) {
-        uint256 shares = super.withdraw(assets, receiver, owner);
-        _locks[owner].dequeueMany(block.timestamp, shares);
-
-        return shares;
-    }
-
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address owner
-    ) public override(ERC4626, IERC4626) returns (uint256) {
-        uint256 assets = super.redeem(shares, receiver, owner);
-        _locks[owner].dequeueMany(block.timestamp, shares);
-
-        return assets;
-    }
-
-    function _withdraw(
-        address caller,
-        address receiver,
-        address owner,
-        uint256 assets,
-        uint256 shares
-    ) internal override {
-        super._withdraw(caller, receiver, owner, assets, shares);
-
-        userCheckpoint(msg.sender);
-
-        uint256 week = block.timestamp.toWeekNumber();
-        lockedTotalBalanceDuring[week] -= assets;
-        lockedUserBalanceDuring[msg.sender][week] -= assets;
+        emit Transfer(account, address(0), amount);
     }
 }

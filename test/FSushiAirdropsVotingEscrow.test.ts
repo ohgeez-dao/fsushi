@@ -45,7 +45,7 @@ describe("FSushiAirdropsVotingEscrow", function () {
     });
 
     it("should claim", async function () {
-        const deployTime = Math.floor(Date.UTC(2023, 1, 5) / 1000);
+        const deployTime = Math.floor(Date.UTC(2024, 1, 5) / 1000);
         const { sushi, alice, bob, ve, fSushi } = await setupTest(deployTime);
 
         await sushi.mint(alice.address, ONE.mul(100));

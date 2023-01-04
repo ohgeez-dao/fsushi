@@ -2,46 +2,45 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import "./IFSushiRestaurant.sol";
 
-interface IFSushiBar is IERC4626, IFSushiRestaurant {
+interface IFSushiBar is IFSushiRestaurant {
+    error Bankrupt();
     error InvalidDuration();
+    error InvalidAccount();
+    error NotEnoughBalance();
+    error NotExpired();
 
-    function previewDeposit(uint256 assets, uint256 _weeks) external view returns (uint256);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Deposit(address indexed sender, address indexed beneficiary, uint256 shares, uint256 assets);
+    event Withdraw(address indexed owner, address indexed beneficiary, uint256 shares, uint256 assets);
 
-    function previewMint(uint256 shares, uint256 _weeks) external view returns (uint256);
+    function asset() external view returns (address);
+
+    function name() external view returns (string memory);
+
+    function symbol() external view returns (string memory);
+
+    function decimals() external view returns (uint8);
+
+    function totalSupply() external view returns (uint256);
+
+    function balanceOf(address account) external view returns (uint256);
+
+    function totalAssets() external view returns (uint256);
+
+    function userAssets(address owner) external view returns (uint256);
+
+    function maxDeposit() external view returns (uint256);
+
+    function previewDeposit(uint256 assets, uint256 _weeks) external view returns (uint256 shares);
+
+    function maxWithdraw(address owner) external view returns (uint256 shares, uint256 assets);
+
+    function previewWithdraw(address owner, uint256 expiry) external view returns (uint256 shares, uint256 assets);
 
     function depositSigned(
         uint256 assets,
-        address receiver,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (uint256);
-
-    function depositSigned(
-        uint256 assets,
-        uint256 _weeks,
-        address receiver,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (uint256);
-
-    function mintSigned(
-        uint256 shares,
-        address receiver,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external returns (uint256);
-
-    function mintSigned(
-        uint256 shares,
         uint256 _weeks,
         address receiver,
         uint256 deadline,
@@ -56,9 +55,5 @@ interface IFSushiBar is IERC4626, IFSushiRestaurant {
         address receiver
     ) external returns (uint256);
 
-    function mint(
-        uint256 shares,
-        uint256 _weeks,
-        address receiver
-    ) external returns (uint256);
+    function withdraw(uint256 expiry, address beneficiary) external returns (uint256);
 }

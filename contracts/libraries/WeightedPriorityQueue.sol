@@ -7,8 +7,8 @@ library WeightedPriorityQueue {
     error QueueEmpty();
 
     struct Snapshot {
-        uint256 amount;
-        uint256 weight;
+        uint256 power;
+        uint256 shares;
     }
 
     struct Heap {
@@ -28,51 +28,32 @@ library WeightedPriorityQueue {
     /**
      * @dev average time complexity: O(log n), worst-case time complexity: O(n)
      */
-    function enqueuedTotalAmount(Heap storage self, uint256 timestamp) internal view returns (uint256 amount) {
-        return _dfsAmount(self, amount, timestamp, 1);
+    function enqueued(Heap storage self, uint256 timestamp) internal view returns (uint256 power, uint256 shares) {
+        return _dfs(self, timestamp, 1);
     }
 
-    function _dfsAmount(
+    function _dfs(
         Heap storage self,
-        uint256 result,
         uint256 timestamp,
         uint256 i
-    ) private view returns (uint256) {
-        if (i >= self.timestamps.length) return result;
-        if (self.timestamps[i] > timestamp) return result;
-        result += self.snapshots[self.timestamps[i]].amount;
-        result += _dfsAmount(self, result, timestamp, i * 2);
-        result += _dfsAmount(self, result, timestamp, i * 2 + 1);
-        return result;
-    }
+    ) private view returns (uint256 power, uint256 shares) {
+        if (i >= self.timestamps.length) return (0, 0);
+        if (self.timestamps[i] > timestamp) return (0, 0);
 
-    /**
-     * @dev average time complexity: O(log n), worst-case time complexity: O(n)
-     */
-    function enqueuedWeightedAmount(Heap storage self, uint256 timestamp) internal view returns (uint256 amount) {
-        return _dfsWeightedAmount(self, amount, timestamp, 1);
-    }
-
-    function _dfsWeightedAmount(
-        Heap storage self,
-        uint256 result,
-        uint256 timestamp,
-        uint256 i
-    ) private view returns (uint256) {
-        if (i >= self.timestamps.length) return result;
-        if (self.timestamps[i] > timestamp) return result;
         Snapshot memory snapshot = self.snapshots[self.timestamps[i]];
-        result += snapshot.weight * snapshot.amount;
-        result += _dfsWeightedAmount(self, result, timestamp, i * 2);
-        result += _dfsWeightedAmount(self, result, timestamp, i * 2 + 1);
-        return result;
+        power = snapshot.power;
+        shares = snapshot.shares;
+
+        (uint256 powerLeft, uint256 sharesLeft) = _dfs(self, timestamp, i * 2);
+        (uint256 powerRight, uint256 sharesRight) = _dfs(self, timestamp, i * 2 + 1);
+        return (power + powerLeft + powerRight, shares + sharesLeft + sharesRight);
     }
 
     function enqueue(
         Heap storage self,
         uint256 timestamp,
-        uint256 amount,
-        uint256 weight
+        uint256 power,
+        uint256 shares
     ) internal {
         if (self.timestamps.length == 0) self.timestamps.push(0); // initialize
 
@@ -84,7 +65,7 @@ library WeightedPriorityQueue {
             i /= 2;
         }
 
-        self.snapshots[timestamp] = Snapshot(amount, weight);
+        self.snapshots[timestamp] = Snapshot(power, shares);
     }
 
     function dequeue(Heap storage self)
@@ -92,8 +73,8 @@ library WeightedPriorityQueue {
         notEmpty(self)
         returns (
             uint256 timestamp,
-            uint256 amount,
-            uint256 weight
+            uint256 power,
+            uint256 shares
         )
     {
         if (self.timestamps.length == 1) revert QueueEmpty();
@@ -119,27 +100,17 @@ library WeightedPriorityQueue {
         Snapshot memory snapshot = self.snapshots[timestamp];
         delete self.snapshots[timestamp];
 
-        return (timestamp, snapshot.amount, snapshot.weight);
+        return (timestamp, snapshot.power, snapshot.shares);
     }
 
-    function dequeueMany(
-        Heap storage self,
-        uint256 timestamp,
-        uint256 weightedAmountMax
-    ) internal returns (uint256 amountDequeued, uint256 weightedAmountDequeued) {
-        while (self.timestamps.length > 1) {
-            uint256 _top = top(self);
-            if (_top < timestamp) break;
-            Snapshot memory snapshot = self.snapshots[_top];
-            if (weightedAmountDequeued + snapshot.amount * snapshot.weight > weightedAmountMax) break;
-
-            (, uint256 amount, uint256 weight) = dequeue(self);
-            amountDequeued += amount;
-            weightedAmountDequeued += amount * weight;
+    function drain(Heap storage self, uint256 timestamp)
+        internal
+        returns (uint256 powerDequeued, uint256 sharesDequeued)
+    {
+        while (self.timestamps.length > 1 && top(self) < timestamp) {
+            (, uint256 power, uint256 shares) = dequeue(self);
+            powerDequeued += power;
+            sharesDequeued += shares;
         }
-    }
-
-    function dequeueAll(Heap storage self, uint256 timestamp) internal {
-        while (self.timestamps.length > 1 && top(self) < timestamp) dequeue(self);
     }
 }

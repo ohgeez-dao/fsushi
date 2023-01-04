@@ -1,6 +1,7 @@
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 
-export const WEEK = 60 * 60 * 24 * 7;
+export const DAY = 60 * 60 * 24;
+export const WEEK = 7 * DAY;
 
 export const toWeekNumber = (timestamp: number) => Math.floor(timestamp / WEEK);
 

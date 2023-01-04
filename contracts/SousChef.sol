@@ -116,7 +116,7 @@ contract SousChef is Ownable, ISousChef {
             if (until <= week) break;
             // last week's circulating supply becomes the total rewards in this week
             uint256 circulatingSupply = IFSushi(fSushi).checkpointedTotalSupplyDuring(week - 1) -
-                IFSushiRestaurant(restaurant).checkpointedLockedTotalBalanceDuring(week - 1);
+                IFSushiRestaurant(restaurant).checkpointedTotalAssetsDuring(week - 1);
             // emission rate decreases 1% every week
             uint256 rewards = (circulatingSupply * 99) / 100;
             // 10x bonus is given only for the first week

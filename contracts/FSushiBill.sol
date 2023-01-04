@@ -176,8 +176,8 @@ contract FSushiBill is BaseERC20, IFSushiBill {
         IFSushiRestaurant(restaurant).userCheckpoint(account);
 
         uint256 week = block.timestamp.toWeekNumber();
-        uint256 lockedBalance = IFSushiRestaurant(restaurant).lockedUserBalanceDuring(account, week - 1);
-        uint256 lockedTotal = IFSushiRestaurant(restaurant).lockedTotalBalanceDuring(week - 1);
+        uint256 lockedBalance = IFSushiRestaurant(restaurant).userAssetsDuring(account, week - 1);
+        uint256 lockedTotal = IFSushiRestaurant(restaurant).totalAssetsDuring(week - 1);
 
         uint256 workingBalance = (balance * TOKENLESS_PRODUCTION) / 100;
         if (lockedTotal > 0) {
