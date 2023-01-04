@@ -102,7 +102,7 @@ contract FlashStrategySushiSwap is Initializable, ReentrancyGuard, IFlashStrateg
     }
 
     function getMaxStakeDuration() public pure override returns (uint256) {
-        return 4 * 365 days;
+        return 104 weeks; // almost 2 years
     }
 
     /**
