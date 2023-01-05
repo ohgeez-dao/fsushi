@@ -44,6 +44,7 @@ contract FSushiBar is IFSushiBar {
     uint256 public override lastCheckpoint; // week
 
     uint256 internal _totalPower;
+    uint256 internal _totalYield;
 
     modifier validWeeks(uint256 _weeks) {
         if (_weeks < MINIMUM_WEEKS || _weeks > MAXIMUM_WEEKS) revert InvalidDuration();
@@ -68,11 +69,18 @@ contract FSushiBar is IFSushiBar {
         return _toShares(_toPower(assets, _weeks), _totalPower);
     }
 
-    function previewWithdraw(address owner) public view override returns (uint256 shares, uint256 assets) {
-        (uint256 _assets, uint256 power, uint256 _shares) = _locks[owner].enqueued(block.timestamp);
-
-        shares = _shares;
-        assets = _assets + _getYield(_assets, power, IERC20(asset).balanceOf(address(this)));
+    function previewWithdraw(address owner)
+        public
+        view
+        override
+        returns (
+            uint256 shares,
+            uint256 assets,
+            uint256 yield
+        )
+    {
+        (assets, , shares) = _locks[owner].enqueued(block.timestamp);
+        yield = _getYield(shares);
     }
 
     function _toShares(uint256 power, uint256 totalPower) internal view returns (uint256 shares) {
@@ -84,16 +92,11 @@ contract FSushiBar is IFSushiBar {
         return assets.mulDiv(_weeks, MAXIMUM_WEEKS, Math.Rounding.Up);
     }
 
-    function _getYield(
-        uint256 _assets,
-        uint256 power,
-        uint256 _totalAssets
-    ) internal view returns (uint256 yield) {
-        uint256 totalPower = _totalPower;
-        if (totalPower == 0) return 0;
+    function _getYield(uint256 shares) internal view returns (uint256 yield) {
+        uint256 _totalSupply = totalSupply;
+        if (_totalSupply == 0) return 0;
 
-        uint256 assetsOfPower = power.mulDiv(_totalAssets, totalPower, Math.Rounding.Down);
-        yield = assetsOfPower >= _assets ? 0 : _assets - assetsOfPower;
+        return _totalYield.mulDiv(shares, _totalSupply, Math.Rounding.Down);
     }
 
     function depositSigned(
@@ -138,22 +141,31 @@ contract FSushiBar is IFSushiBar {
         return shares;
     }
 
-    function withdraw(address beneficiary) public override returns (uint256 shares, uint256 assets) {
+    function withdraw(address beneficiary)
+        public
+        override
+        returns (
+            uint256 shares,
+            uint256 assets,
+            uint256 yield
+        )
+    {
         checkpoint();
 
-        (uint256 _assets, uint256 power, uint256 _shares) = _locks[msg.sender].drain(block.timestamp);
-        if (_shares == 0) revert WithdrawalDenied();
+        uint256 power;
+        (assets, power, shares) = _locks[msg.sender].drain(block.timestamp);
+        if (shares == 0) revert WithdrawalDenied();
 
-        shares = _shares;
-        assets = _assets + _getYield(_assets, power, totalAssets);
-        totalAssets -= assets;
-        totalAssetsDuring[block.timestamp.toWeekNumber()] -= assets;
+        yield = _getYield(shares);
+        totalAssets -= (assets + yield);
+        totalAssetsDuring[block.timestamp.toWeekNumber()] -= (assets + yield);
         _totalPower -= power;
+        _totalYield -= yield;
 
-        _burn(msg.sender, _shares);
-        IERC20(asset).safeTransfer(beneficiary, assets);
+        _burn(msg.sender, shares);
+        IERC20(asset).safeTransfer(beneficiary, assets + yield);
 
-        emit Withdraw(msg.sender, beneficiary, _shares, assets);
+        emit Withdraw(msg.sender, beneficiary, shares, assets, yield);
     }
 
     function checkpointedTotalAssets() external override returns (uint256) {
@@ -176,6 +188,7 @@ contract FSushiBar is IFSushiBar {
             totalAssets = newTotalAssets;
             totalAssetsDuring[block.timestamp.toWeekNumber()] = newTotalAssets;
             _totalPower += newTotalAssets - oldTotalAssets;
+            _totalYield += newTotalAssets - oldTotalAssets;
         }
 
         uint256 from = lastCheckpoint;

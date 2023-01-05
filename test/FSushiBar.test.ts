@@ -94,7 +94,7 @@ describe("FSushiBar", function () {
         expect(await fSushiBar.totalAssets()).to.be.equal(MAXIMUM_AMOUNT.mul(11).div(6));
         expect(await fSushiBar.totalAssetsDuring(week0)).to.be.equal(MAXIMUM_AMOUNT.mul(11).div(6));
 
-        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [0, 0]);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [0, 0, 0]);
         await expect(fSushiBar.connect(alice).withdraw(alice.address)).to.be.revertedWithCustomError(
             fSushiBar,
             "WithdrawalDenied"
@@ -103,9 +103,9 @@ describe("FSushiBar", function () {
         const week1 = week0 + 1;
         await time.increase(WEEK + DAY);
 
-        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [ONE, MAXIMUM_AMOUNT]);
-        expectDeepApproximately(await fSushiBar.previewWithdraw(bob.address), [ONE.div(2), MAXIMUM_AMOUNT.div(2)]);
-        expectDeepApproximately(await fSushiBar.previewWithdraw(carol.address), [ONE.div(3), MAXIMUM_AMOUNT.div(3)]);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [ONE, MAXIMUM_AMOUNT, 0]);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(bob.address), [ONE.div(2), MAXIMUM_AMOUNT.div(2), 0]);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(carol.address), [ONE.div(3), MAXIMUM_AMOUNT.div(3), 0]);
 
         await fSushiBar.connect(alice).withdraw(alice.address);
         expect(await fSushiBar.balanceOf(alice.address)).to.be.equal(0);
@@ -172,31 +172,35 @@ describe("FSushiBar", function () {
         await fSushiBar.checkpoint();
         // 2 + 1 = 3
         expect(await fSushiBar.totalAssets()).to.be.equal(ONE.mul(3));
-        expectDeepApproximately(await fSushiBar.previewWithdraw(bob.address), [0, 0]);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(bob.address), [0, 0, 0]);
 
         await time.increase(WEEK * 52 + DAY);
-        expectDeepApproximately(await fSushiBar.previewWithdraw(bob.address), [ONE.mul(1).div(6), ONE.mul(8).div(11)]);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(bob.address), [
+            ONE.mul(1).div(6),
+            ONE.div(2),
+            ONE.mul(3).div(14),
+        ]);
 
         const balanceBob = await fSushi.balanceOf(bob.address);
         await fSushiBar.connect(bob).withdraw(bob.address);
-        // 1/2 + 1/2 - (1/4) * 3) / (11/4) = 1 - 3/11 = 8/11
-        expect((await fSushi.balanceOf(bob.address)).sub(balanceBob)).to.be.approximately(ONE.mul(8).div(11), DELTA);
+        // 1/2 + 3/2 * (1/6) / (7/6) = 1/2 + 3/14 = 5/7
+        expect((await fSushi.balanceOf(bob.address)).sub(balanceBob)).to.be.approximately(ONE.mul(5).div(7), DELTA);
         // 7/6 - 1/6 = 1
         expect(await fSushiBar.totalSupply()).to.be.equal(ONE);
-        // 3 - 8/11 = 75/33
-        expect(await fSushiBar.totalAssets()).to.be.approximately(ONE.mul(75).div(33), DELTA);
+        // 3 - 5/7 = 16/7
+        expect(await fSushiBar.totalAssets()).to.be.approximately(ONE.mul(16).div(7), DELTA);
 
         await time.increase(WEEK * 52);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [ONE, ONE, ONE.mul(9).div(7)]);
 
         const balanceAlice = await fSushi.balanceOf(alice.address);
         await fSushiBar.connect(alice).withdraw(alice.address);
-        // 1 + 1 - (1 * 75/33) / (5/2) = 2 - 10/11 = 12/11
+        // 1 + 9/7 * 1 / 1 = 16/7
         expect((await fSushi.balanceOf(alice.address)).sub(balanceAlice)).to.be.approximately(
-            ONE.mul(12).div(11),
+            ONE.mul(16).div(7),
             DELTA
         );
         expect(await fSushiBar.totalSupply()).to.be.equal(0);
-        // 75/33 - 12/11 = 13/11
-        expect(await fSushiBar.totalAssets()).to.be.approximately(ONE.mul(13).div(11), DELTA);
+        expect(await fSushiBar.totalAssets()).to.be.approximately(0, DELTA);
     });
 });

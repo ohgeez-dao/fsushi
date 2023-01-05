@@ -13,7 +13,7 @@ interface IFSushiBar is IFSushiRestaurant {
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Deposit(address indexed sender, address indexed beneficiary, uint256 shares, uint256 assets);
-    event Withdraw(address indexed owner, address indexed beneficiary, uint256 shares, uint256 assets);
+    event Withdraw(address indexed owner, address indexed beneficiary, uint256 shares, uint256 assets, uint256 yield);
 
     function asset() external view returns (address);
 
@@ -29,7 +29,14 @@ interface IFSushiBar is IFSushiRestaurant {
 
     function previewDeposit(uint256 assets, uint256 _weeks) external view returns (uint256 shares);
 
-    function previewWithdraw(address owner) external view returns (uint256 shares, uint256 assets);
+    function previewWithdraw(address owner)
+        external
+        view
+        returns (
+            uint256 shares,
+            uint256 assets,
+            uint256 yield
+        );
 
     function depositSigned(
         uint256 assets,
@@ -47,5 +54,11 @@ interface IFSushiBar is IFSushiRestaurant {
         address receiver
     ) external returns (uint256);
 
-    function withdraw(address beneficiary) external returns (uint256 shares, uint256 assets);
+    function withdraw(address beneficiary)
+        external
+        returns (
+            uint256 shares,
+            uint256 assets,
+            uint256 yield
+        );
 }
