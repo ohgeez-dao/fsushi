@@ -23,6 +23,7 @@ const setupTest = async deployTimestamp => {
     const fSushi = (await FS.deploy()) as FSushi;
     await fSushi.setMinter(deployer.address, true);
 
+    await fSushi.mint(deployer.address, ONE.mul(1000));
     await fSushi.mint(alice.address, ONE.mul(1000));
     await fSushi.mint(bob.address, ONE.mul(1000));
     await fSushi.mint(carol.address, ONE.mul(1000));
@@ -70,9 +71,6 @@ describe("FSushiBar", function () {
 
         expect(await fSushiBar.totalAssets()).to.be.equal(MAXIMUM_AMOUNT);
         expect(await fSushiBar.totalAssetsDuring(week0)).to.be.equal(MAXIMUM_AMOUNT);
-        expect(await fSushiBar.userAssetsDuring(alice.address, week0)).to.be.equal(MAXIMUM_AMOUNT);
-        expect(await fSushiBar.userAssetsDuring(bob.address, week0)).to.be.equal(0);
-        expect(await fSushiBar.userAssetsDuring(carol.address, week0)).to.be.equal(0);
 
         expect(await fSushiBar.previewDeposit(MAXIMUM_AMOUNT.div(2), 1)).to.be.equal(ONE.div(2));
 
@@ -82,12 +80,9 @@ describe("FSushiBar", function () {
         expect(await fSushiBar.balanceOf(bob.address)).to.be.equal(ONE.div(2));
         expect(await fSushiBar.balanceOf(carol.address)).to.be.equal(0);
 
-        // 1 + 1/2 = 2/3
+        // 1 + 1/2 = 3/2
         expect(await fSushiBar.totalAssets()).to.be.equal(MAXIMUM_AMOUNT.mul(3).div(2));
         expect(await fSushiBar.totalAssetsDuring(week0)).to.be.equal(MAXIMUM_AMOUNT.mul(3).div(2));
-        expect(await fSushiBar.userAssetsDuring(alice.address, week0)).to.be.equal(MAXIMUM_AMOUNT);
-        expect(await fSushiBar.userAssetsDuring(bob.address, week0)).to.be.equal(MAXIMUM_AMOUNT.div(2));
-        expect(await fSushiBar.userAssetsDuring(carol.address, week0)).to.be.equal(0);
 
         await fSushi.connect(carol).approve(fSushiBar.address, MAXIMUM_AMOUNT);
         await fSushiBar.connect(carol).deposit(MAXIMUM_AMOUNT.div(3), 1, carol.address);
@@ -95,26 +90,24 @@ describe("FSushiBar", function () {
         expect(await fSushiBar.balanceOf(bob.address)).to.be.equal(ONE.div(2));
         expect(await fSushiBar.balanceOf(carol.address)).to.be.approximately(ONE.div(3), DELTA);
 
-        // 3/2 + 1/3 = 9/6 + 2/6 = 11/6
+        // 3/2 + 1/3 = 11/6
         expect(await fSushiBar.totalAssets()).to.be.equal(MAXIMUM_AMOUNT.mul(11).div(6));
         expect(await fSushiBar.totalAssetsDuring(week0)).to.be.equal(MAXIMUM_AMOUNT.mul(11).div(6));
-        expect(await fSushiBar.userAssetsDuring(alice.address, week0)).to.be.equal(MAXIMUM_AMOUNT);
-        expect(await fSushiBar.userAssetsDuring(bob.address, week0)).to.be.equal(MAXIMUM_AMOUNT.div(2));
-        expect(await fSushiBar.userAssetsDuring(carol.address, week0)).to.be.equal(MAXIMUM_AMOUNT.div(3));
 
-        expectDeepApproximately(await fSushiBar.maxWithdraw(alice.address), [0, 0]);
-        await expect(
-            fSushiBar.connect(alice).withdraw(await time.latest(), alice.address)
-        ).to.be.revertedWithCustomError(fSushiBar, "NotExpired");
+        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [0, 0]);
+        await expect(fSushiBar.connect(alice).withdraw(alice.address)).to.be.revertedWithCustomError(
+            fSushiBar,
+            "WithdrawalDenied"
+        );
 
         const week1 = week0 + 1;
         await time.increase(WEEK + DAY);
 
-        expectDeepApproximately(await fSushiBar.maxWithdraw(alice.address), [ONE, MAXIMUM_AMOUNT]);
-        expectDeepApproximately(await fSushiBar.maxWithdraw(bob.address), [ONE.div(2), MAXIMUM_AMOUNT.div(2)]);
-        expectDeepApproximately(await fSushiBar.maxWithdraw(carol.address), [ONE.div(3), MAXIMUM_AMOUNT.div(3)]);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [ONE, MAXIMUM_AMOUNT]);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(bob.address), [ONE.div(2), MAXIMUM_AMOUNT.div(2)]);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(carol.address), [ONE.div(3), MAXIMUM_AMOUNT.div(3)]);
 
-        await fSushiBar.connect(alice).withdraw(await time.latest(), alice.address);
+        await fSushiBar.connect(alice).withdraw(alice.address);
         expect(await fSushiBar.balanceOf(alice.address)).to.be.equal(0);
         expect(await fSushiBar.balanceOf(bob.address)).to.be.equal(ONE.div(2));
         expect(await fSushiBar.balanceOf(carol.address)).to.be.approximately(ONE.div(3), DELTA);
@@ -122,54 +115,88 @@ describe("FSushiBar", function () {
         // 11/6 - 1 = 5/6
         expect(await fSushiBar.totalAssets()).to.be.approximately(MAXIMUM_AMOUNT.mul(5).div(6), DELTA);
         expect(await fSushiBar.totalAssetsDuring(week1)).to.be.approximately(MAXIMUM_AMOUNT.mul(5).div(6), DELTA);
-        expect(await fSushiBar.userAssets(alice.address)).to.be.approximately(0, DELTA);
-        expect(await fSushiBar.userAssetsDuring(alice.address, week1)).to.be.approximately(0, DELTA);
-        expect(await fSushiBar.userAssetsDuring(bob.address, week1)).to.be.equal(0);
-        expect(await fSushiBar.userAssetsDuring(carol.address, week1)).to.be.equal(0);
-
-        await fSushiBar.userCheckpoint(bob.address);
-        expect(await fSushiBar.userAssetsDuring(bob.address, week1)).to.be.equal(MAXIMUM_AMOUNT.div(2));
-
-        await fSushiBar.userCheckpoint(carol.address);
-        expect(await fSushiBar.userAssetsDuring(carol.address, week1)).to.be.approximately(
-            MAXIMUM_AMOUNT.div(3),
-            DELTA
-        );
 
         // 5/6 - 1/2 = 1/3
-        await fSushiBar.connect(bob).withdraw(await time.latest(), bob.address);
+        await fSushiBar.connect(bob).withdraw(bob.address);
         expect(await fSushiBar.totalAssets()).to.be.approximately(MAXIMUM_AMOUNT.div(3), DELTA);
         expect(await fSushiBar.totalAssetsDuring(week1)).to.be.approximately(MAXIMUM_AMOUNT.div(3), DELTA);
-        expect(await fSushiBar.userAssetsDuring(alice.address, week1)).to.be.approximately(0, DELTA);
-        expect(await fSushiBar.userAssets(bob.address)).to.be.approximately(0, DELTA);
-        expect(await fSushiBar.userAssetsDuring(bob.address, week1)).to.be.approximately(0, DELTA);
 
         // await fSushi.connect(alice).approve(fSushiBar.address, ONE);
         // await fSushiBar.connect(alice).deposit(ONE, alice.address);
         // expect(await fSushiBar.totalAssetsDuring(week1)).to.be.equal(ONE);
-        // expect(await fSushiBar.userAssetsDuring(alice.address, week1)).to.be.equal(ONE);
-        // expect(await fSushiBar.userAssetsDuring(bob.address, week1)).to.be.equal(0);
-        // expect(await fSushiBar.userAssetsDuring(carol.address, week1)).to.be.equal(0);
         //
         // await time.increase(WEEK * 10);
         // for (let i = 0; i < 10; i++) {
         //     expect(await fSushiBar.totalAssetsDuring(week1 + i + 1)).to.be.equal(0);
-        //     expect(await fSushiBar.userAssetsDuring(alice.address, week1 + i + 1)).to.be.equal(0);
-        //     expect(await fSushiBar.userAssetsDuring(bob.address, week1 + i + 1)).to.be.equal(0);
-        //     expect(await fSushiBar.userAssetsDuring(carol.address, week1 + i + 1)).to.be.equal(0);
         // }
         //
         // await fSushiBar.checkpoint();
         // for (let i = 0; i < 10; i++) {
         //     expect(await fSushiBar.totalAssetsDuring(week1 + i + 1)).to.be.equal(ONE);
-        //     expect(await fSushiBar.userAssetsDuring(alice.address, week1 + i + 1)).to.be.equal(0);
-        //     expect(await fSushiBar.userAssetsDuring(bob.address, week1 + i + 1)).to.be.equal(0);
-        //     expect(await fSushiBar.userAssetsDuring(carol.address, week1 + i + 1)).to.be.equal(0);
         // }
-        //
-        // await fSushiBar.userCheckpoint(alice.address);
-        // for (let i = 0; i < 10; i++) {
-        //     expect(await fSushiBar.totalAssetsDuring(week1 + i + 1)).to.be.equal(ONE);
-        //     expect(await fSushiBar.userAssetsDuring(alice.address, week1 + i + 1)).to.be.equal(ONE);
+    });
+
+    it("should deposit/withdraw in dynamic situation", async function () {
+        const deployTime = Math.floor(Date.UTC(2024, 0, 1) / 1000);
+        const { alice, bob, fSushi, fSushiBar } = await setupTest(deployTime);
+
+        const week0 = toWeekNumber(deployTime) + 1;
+        expect(await fSushiBar.startWeek()).to.be.equal(week0);
+        expect(await fSushiBar.lastCheckpoint()).to.be.equal(week0);
+
+        await mineAtWeekStart(week0);
+
+        expect(await fSushiBar.previewDeposit(ONE, MAXIMUM_WEEKS)).to.be.equal(ONE);
+
+        await fSushi.connect(alice).approve(fSushiBar.address, ONE);
+        await fSushiBar.connect(alice).deposit(ONE, MAXIMUM_WEEKS, alice.address);
+        expect(await fSushiBar.balanceOf(alice.address)).to.be.equal(ONE);
+        expect(await fSushiBar.totalSupply()).to.be.equal(ONE);
+        expect(await fSushiBar.totalAssets()).to.be.equal(ONE);
+
+        await fSushi.transfer(fSushiBar.address, ONE.div(2));
+        await fSushiBar.checkpoint();
+        // 1 + 1/2 = 3/2
+        expect(await fSushiBar.totalAssets()).to.be.equal(ONE.mul(3).div(2));
+
+        await fSushi.connect(bob).approve(fSushiBar.address, ONE.div(2));
+        await fSushiBar.connect(bob).deposit(ONE.div(2), 52, bob.address);
+        // (1/2 * 1/2) * 1 / (3/2) = 1/6
+        expect(await fSushiBar.balanceOf(bob.address)).to.be.approximately(ONE.div(6), DELTA);
+        // 1 + 1/6 = 7/6
+        expect(await fSushiBar.totalSupply()).to.be.equal(ONE.mul(7).div(6));
+        // 3/2 + 1/2 = 2
+        expect(await fSushiBar.totalAssets()).to.be.equal(ONE.mul(2));
+
+        await fSushi.transfer(fSushiBar.address, ONE.mul(1));
+        await fSushiBar.checkpoint();
+        // 2 + 1 = 3
+        expect(await fSushiBar.totalAssets()).to.be.equal(ONE.mul(3));
+        expectDeepApproximately(await fSushiBar.previewWithdraw(bob.address), [0, 0]);
+
+        await time.increase(WEEK * 52 + DAY);
+        expectDeepApproximately(await fSushiBar.previewWithdraw(bob.address), [ONE.mul(1).div(6), ONE.mul(8).div(11)]);
+
+        const balanceBob = await fSushi.balanceOf(bob.address);
+        await fSushiBar.connect(bob).withdraw(bob.address);
+        // 1/2 + 1/2 - (1/4) * 3) / (11/4) = 1 - 3/11 = 8/11
+        expect((await fSushi.balanceOf(bob.address)).sub(balanceBob)).to.be.approximately(ONE.mul(8).div(11), DELTA);
+        // 7/6 - 1/6 = 1
+        expect(await fSushiBar.totalSupply()).to.be.equal(ONE);
+        // 3 - 8/11 = 75/33
+        expect(await fSushiBar.totalAssets()).to.be.approximately(ONE.mul(75).div(33), DELTA);
+
+        await time.increase(WEEK * 52);
+
+        const balanceAlice = await fSushi.balanceOf(alice.address);
+        await fSushiBar.connect(alice).withdraw(alice.address);
+        // 1 + 1 - (1 * 75/33) / (5/2) = 2 - 10/11 = 12/11
+        expect((await fSushi.balanceOf(alice.address)).sub(balanceAlice)).to.be.approximately(
+            ONE.mul(12).div(11),
+            DELTA
+        );
+        expect(await fSushiBar.totalSupply()).to.be.equal(0);
+        // 75/33 - 12/11 = 13/11
+        expect(await fSushiBar.totalAssets()).to.be.approximately(ONE.mul(13).div(11), DELTA);
     });
 });

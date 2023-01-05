@@ -11,7 +11,6 @@ interface IFSushiBill is IERC20Metadata {
     event Withdraw(address indexed account, uint256 amount, address indexed beneficiary);
     event Checkpoint();
     event UserCheckpoint(address indexed account);
-    event UpdateWorkingBalance(address indexed account, uint256 workingBalance, uint256 workingSupply);
     event ClaimRewards(address indexed account, address indexed beneficiary, uint256 amount);
 
     function sousChef() external view returns (address);
@@ -20,13 +19,9 @@ interface IFSushiBill is IERC20Metadata {
 
     function fToken() external view returns (address);
 
-    function workingSupply() external view returns (uint256);
-
     function points(uint256 week) external view returns (uint256);
 
     function lastCheckpoint() external view returns (uint256 timestamp);
-
-    function workingBalanceOf(address account) external view returns (uint256);
 
     function userPoints(address account, uint256 week) external view returns (uint256);
 

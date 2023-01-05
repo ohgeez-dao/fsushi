@@ -9,7 +9,7 @@ interface IFSushiBar is IFSushiRestaurant {
     error InvalidDuration();
     error InvalidAccount();
     error NotEnoughBalance();
-    error NotExpired();
+    error WithdrawalDenied();
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Deposit(address indexed sender, address indexed beneficiary, uint256 shares, uint256 assets);
@@ -27,17 +27,9 @@ interface IFSushiBar is IFSushiRestaurant {
 
     function balanceOf(address account) external view returns (uint256);
 
-    function totalAssets() external view returns (uint256);
-
-    function userAssets(address owner) external view returns (uint256);
-
-    function maxDeposit() external view returns (uint256);
-
     function previewDeposit(uint256 assets, uint256 _weeks) external view returns (uint256 shares);
 
-    function maxWithdraw(address owner) external view returns (uint256 shares, uint256 assets);
-
-    function previewWithdraw(address owner, uint256 expiry) external view returns (uint256 shares, uint256 assets);
+    function previewWithdraw(address owner) external view returns (uint256 shares, uint256 assets);
 
     function depositSigned(
         uint256 assets,
@@ -55,5 +47,5 @@ interface IFSushiBar is IFSushiRestaurant {
         address receiver
     ) external returns (uint256);
 
-    function withdraw(uint256 expiry, address beneficiary) external returns (uint256);
+    function withdraw(address beneficiary) external returns (uint256 shares, uint256 assets);
 }

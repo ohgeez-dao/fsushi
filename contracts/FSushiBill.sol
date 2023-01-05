@@ -21,9 +21,8 @@ contract FSushiBill is BaseERC20, IFSushiBill {
     uint256 public override pid;
     address public override fToken;
 
-    uint256 public override workingSupply; // amount
     /**
-     * @notice points = ∫W(t)dt, where W(t) is the working supply at the week
+     * @notice points = ∫W(t)dt, where W(t) is the total supply at the week
      */
     mapping(uint256 => uint256) public override points; // week => points
     /**
@@ -31,9 +30,8 @@ contract FSushiBill is BaseERC20, IFSushiBill {
      */
     uint256 public override lastCheckpoint; // timestamp
 
-    mapping(address => uint256) public override workingBalanceOf; // account => amount
     /**
-     * @notice userPoints = ∫w(t)dt, where a(t) is the working balance of account at the week
+     * @notice userPoints = ∫w(t)dt, where a(t) is the balance of account at the week
      */
     mapping(address => mapping(uint256 => uint256)) public override userPoints; // account => week => points
     /**
@@ -64,7 +62,7 @@ contract FSushiBill is BaseERC20, IFSushiBill {
     }
 
     function deposit(uint256 amount, address beneficiary) external override {
-        _userCheckpoint(msg.sender);
+        userCheckpoint(msg.sender);
 
         if (amount > 0) {
             IERC20(fToken).safeTransferFrom(msg.sender, address(this), amount);
@@ -74,8 +72,6 @@ contract FSushiBill is BaseERC20, IFSushiBill {
             uint256 totalSupply = _totalSupply + amount;
             _totalSupply = totalSupply;
 
-            _updateWorkingBalance(msg.sender, balance, totalSupply);
-
             _mint(beneficiary, amount);
         }
 
@@ -83,15 +79,13 @@ contract FSushiBill is BaseERC20, IFSushiBill {
     }
 
     function withdraw(uint256 amount, address beneficiary) external override {
-        _userCheckpoint(msg.sender);
+        userCheckpoint(msg.sender);
 
         if (amount > 0) {
             uint256 balance = _balanceOf[msg.sender] - amount;
             _balanceOf[msg.sender] = balance;
             uint256 totalSupply = _totalSupply - amount;
             _totalSupply = totalSupply;
-
-            _updateWorkingBalance(msg.sender, balance, totalSupply);
 
             _burn(msg.sender, amount);
 
@@ -108,7 +102,7 @@ contract FSushiBill is BaseERC20, IFSushiBill {
         ISousChef(sousChef).checkpoint();
 
         uint256 prevCheckpoint = lastCheckpoint;
-        _updatePoints(points, workingSupply, prevCheckpoint);
+        _updatePoints(points, _totalSupply, prevCheckpoint);
         if (prevCheckpoint < block.timestamp) {
             lastCheckpoint = block.timestamp;
         }
@@ -116,16 +110,11 @@ contract FSushiBill is BaseERC20, IFSushiBill {
         emit Checkpoint();
     }
 
-    function userCheckpoint(address account) external override {
-        _userCheckpoint(account);
-        _updateWorkingBalance(account, _balanceOf[account], _totalSupply);
-    }
-
-    function _userCheckpoint(address account) internal {
+    function userCheckpoint(address account) public override {
         checkpoint();
 
         uint256 prevCheckpoint = userLastCheckpoint[account];
-        _updatePoints(userPoints[account], workingBalanceOf[account], prevCheckpoint);
+        _updatePoints(userPoints[account], _balanceOf[account], prevCheckpoint);
         if (prevCheckpoint < block.timestamp) {
             userLastCheckpoint[account] = block.timestamp;
         }
@@ -135,10 +124,10 @@ contract FSushiBill is BaseERC20, IFSushiBill {
 
     function _updatePoints(
         mapping(uint256 => uint256) storage _points,
-        uint256 workingBalance,
+        uint256 balance,
         uint256 lastTime
     ) internal {
-        if (workingBalance == 0) return;
+        if (balance == 0) return;
 
         if (lastTime == 0) {
             uint256 startWeek = ISousChef(sousChef).startWeek();
@@ -152,13 +141,13 @@ contract FSushiBill is BaseERC20, IFSushiBill {
             uint256 weekEnd = weekStart + WEEK;
             if (block.timestamp <= weekStart) break;
             if (block.timestamp < weekEnd) {
-                _points[week] += workingBalance * (block.timestamp - Math.max(lastTime, weekStart));
+                _points[week] += balance * (block.timestamp - Math.max(lastTime, weekStart));
                 break;
             }
             if (i == 0) {
-                _points[week] += workingBalance * (weekEnd - lastTime);
+                _points[week] += balance * (weekEnd - lastTime);
             } else {
-                _points[week] += workingBalance * WEEK;
+                _points[week] += balance * WEEK;
             }
 
             unchecked {
@@ -167,36 +156,8 @@ contract FSushiBill is BaseERC20, IFSushiBill {
         }
     }
 
-    function _updateWorkingBalance(
-        address account,
-        uint256 balance,
-        uint256 supply
-    ) internal {
-        address restaurant = ISousChef(sousChef).restaurant();
-        IFSushiRestaurant(restaurant).userCheckpoint(account);
-
-        uint256 week = block.timestamp.toWeekNumber();
-        uint256 lockedBalance = IFSushiRestaurant(restaurant).userAssetsDuring(account, week - 1);
-        uint256 lockedTotal = IFSushiRestaurant(restaurant).totalAssetsDuring(week - 1);
-
-        uint256 workingBalance = (balance * TOKENLESS_PRODUCTION) / 100;
-        if (lockedTotal > 0) {
-            workingBalance += (((supply * lockedBalance) / lockedTotal) * (100 - TOKENLESS_PRODUCTION)) / 100;
-        }
-
-        workingBalance = Math.min(workingBalance, balance);
-
-        uint256 prevBalance = workingBalanceOf[account];
-        workingBalanceOf[account] = workingBalance;
-
-        uint256 _workingSupply = workingSupply + workingBalance - prevBalance;
-        workingSupply = _workingSupply;
-
-        emit UpdateWorkingBalance(account, workingBalance, _workingSupply);
-    }
-
     function claimRewards(address beneficiary) external {
-        _userCheckpoint(msg.sender);
+        userCheckpoint(msg.sender);
 
         uint256 prevWeek = nextClaimableWeek[msg.sender];
         if (prevWeek == block.timestamp) return;
@@ -241,13 +202,9 @@ contract FSushiBill is BaseERC20, IFSushiBill {
         address to,
         uint256 amount
     ) internal override returns (uint256 balanceOfFrom, uint256 balanceOfTo) {
-        _userCheckpoint(from);
-        _userCheckpoint(to);
+        userCheckpoint(from);
+        userCheckpoint(to);
 
-        (balanceOfFrom, balanceOfTo) = super._transfer(from, to, amount);
-
-        uint256 totalSupply = _totalSupply;
-        _updateWorkingBalance(msg.sender, balanceOfFrom, totalSupply);
-        _updateWorkingBalance(msg.sender, balanceOfTo, totalSupply);
+        return super._transfer(from, to, amount);
     }
 }

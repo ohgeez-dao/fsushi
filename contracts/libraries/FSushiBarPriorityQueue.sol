@@ -3,10 +3,11 @@
 pragma solidity ^0.8.17;
 
 // modified https://github.com/MihanixA/SummingPriorityQueue/blob/master/contracts/SummingPriorityQueue.sol
-library WeightedPriorityQueue {
+library FSushiBarPriorityQueue {
     error QueueEmpty();
 
     struct Snapshot {
+        uint256 assets;
         uint256 power;
         uint256 shares;
     }
@@ -28,7 +29,15 @@ library WeightedPriorityQueue {
     /**
      * @dev average time complexity: O(log n), worst-case time complexity: O(n)
      */
-    function enqueued(Heap storage self, uint256 timestamp) internal view returns (uint256 power, uint256 shares) {
+    function enqueued(Heap storage self, uint256 timestamp)
+        internal
+        view
+        returns (
+            uint256 assets,
+            uint256 power,
+            uint256 shares
+        )
+    {
         return _dfs(self, timestamp, 1);
     }
 
@@ -36,22 +45,32 @@ library WeightedPriorityQueue {
         Heap storage self,
         uint256 timestamp,
         uint256 i
-    ) private view returns (uint256 power, uint256 shares) {
-        if (i >= self.timestamps.length) return (0, 0);
-        if (self.timestamps[i] > timestamp) return (0, 0);
+    )
+        private
+        view
+        returns (
+            uint256 assets,
+            uint256 power,
+            uint256 shares
+        )
+    {
+        if (i >= self.timestamps.length) return (0, 0, 0);
+        if (self.timestamps[i] > timestamp) return (0, 0, 0);
 
         Snapshot memory snapshot = self.snapshots[self.timestamps[i]];
+        assets = snapshot.assets;
         power = snapshot.power;
         shares = snapshot.shares;
 
-        (uint256 powerLeft, uint256 sharesLeft) = _dfs(self, timestamp, i * 2);
-        (uint256 powerRight, uint256 sharesRight) = _dfs(self, timestamp, i * 2 + 1);
-        return (power + powerLeft + powerRight, shares + sharesLeft + sharesRight);
+        (uint256 assetsLeft, uint256 powerLeft, uint256 sharesLeft) = _dfs(self, timestamp, i * 2);
+        (uint256 assetsRight, uint256 powerRight, uint256 sharesRight) = _dfs(self, timestamp, i * 2 + 1);
+        return (assets + assetsLeft + assetsRight, power + powerLeft + powerRight, shares + sharesLeft + sharesRight);
     }
 
     function enqueue(
         Heap storage self,
         uint256 timestamp,
+        uint256 assets,
         uint256 power,
         uint256 shares
     ) internal {
@@ -65,7 +84,7 @@ library WeightedPriorityQueue {
             i /= 2;
         }
 
-        self.snapshots[timestamp] = Snapshot(power, shares);
+        self.snapshots[timestamp] = Snapshot(assets, power, shares);
     }
 
     function dequeue(Heap storage self)
@@ -73,6 +92,7 @@ library WeightedPriorityQueue {
         notEmpty(self)
         returns (
             uint256 timestamp,
+            uint256 assets,
             uint256 power,
             uint256 shares
         )
@@ -100,15 +120,20 @@ library WeightedPriorityQueue {
         Snapshot memory snapshot = self.snapshots[timestamp];
         delete self.snapshots[timestamp];
 
-        return (timestamp, snapshot.power, snapshot.shares);
+        return (timestamp, snapshot.assets, snapshot.power, snapshot.shares);
     }
 
     function drain(Heap storage self, uint256 timestamp)
         internal
-        returns (uint256 powerDequeued, uint256 sharesDequeued)
+        returns (
+            uint256 assetsDequeued,
+            uint256 powerDequeued,
+            uint256 sharesDequeued
+        )
     {
         while (self.timestamps.length > 1 && top(self) < timestamp) {
-            (, uint256 power, uint256 shares) = dequeue(self);
+            (, uint256 assets, uint256 power, uint256 shares) = dequeue(self);
+            assetsDequeued += assets;
             powerDequeued += power;
             sharesDequeued += shares;
         }
