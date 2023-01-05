@@ -7,10 +7,10 @@ import setupSushiswap from "./utils/setupSushiswap";
 import setupTokens from "./utils/setupTokens";
 import setupFlashStake from "./utils/setupFlashStake";
 import setupPeripherals from "./utils/setupPeripherals";
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
 
-const REWARDS_FOR_INITIAL_WEEK = BigNumber.from(10).pow(18).mul(300000);
-const FIRST_WEEK_SUPPLY = BigNumber.from("3479005009049906983805");
+const REWARDS_PER_WEEK = BigNumber.from(10).pow(18).mul(30000);
+const REWARDS_FOR_INITIAL_WEEKS = REWARDS_PER_WEEK.mul(10);
 
 const onePercentDecreased = (bn, repeat = 1) => {
     let result = bn;
@@ -111,47 +111,80 @@ describe("SousChef", function () {
         await sushi.chef.add(100, lpToken, false);
         await chef.createBill(pid);
 
-        expect(await chef.weeklyRewards(week0)).to.be.equal(REWARDS_FOR_INITIAL_WEEK);
+        // week 0
+        expect(await chef.weeklyRewards(week0)).to.be.equal(REWARDS_FOR_INITIAL_WEEKS);
+        console.log("week0\t\t" + utils.formatEther(REWARDS_FOR_INITIAL_WEEKS));
 
-        let total = FIRST_WEEK_SUPPLY;
-        await fSushi.mint(alice.address, FIRST_WEEK_SUPPLY);
-        expect(await fSushi.totalSupply()).to.be.equal(total);
+        await fSushi.mint(alice.address, REWARDS_FOR_INITIAL_WEEKS);
+        expect(await fSushi.totalSupply()).to.be.equal(REWARDS_FOR_INITIAL_WEEKS);
 
+        const locked = REWARDS_FOR_INITIAL_WEEKS.div(100);
+        await fSushi.connect(alice).approve(fSushiBar.address, locked);
+        await fSushiBar.connect(alice).deposit(locked, 1, alice.address);
+        console.log("  locked\t" + utils.formatEther(locked));
+
+        // week 1
         await mineAtWeekStart(week0 + 1);
         expect(await chef.weeklyRewards(week0 + 1)).to.be.equal(0);
 
         await chef.checkpoint();
         expect(await chef.lastCheckpoint()).to.be.equal(week0 + 2);
-        let weekly = onePercentDecreased(total);
-        expect(await chef.weeklyRewards(week0 + 1)).to.be.equal(weekly);
+        expect(await chef.weeklyRewards(week0 + 1)).to.be.equal(REWARDS_FOR_INITIAL_WEEKS);
+        console.log("week1\t\t" + utils.formatEther(await chef.weeklyRewards(week0 + 1)));
 
-        const locked = total.div(2);
-        await fSushi.connect(alice).approve(fSushiBar.address, locked);
-        await fSushiBar.connect(alice).deposit(locked, 1, alice.address);
-
-        total = total.add(weekly);
-        await fSushi.mint(alice.address, weekly);
+        await fSushi.mint(alice.address, REWARDS_FOR_INITIAL_WEEKS);
+        let total = REWARDS_FOR_INITIAL_WEEKS.mul(2);
         expect(await fSushi.totalSupply()).to.be.equal(total);
 
+        // week 2
         await mineAtWeekStart(week0 + 2);
         expect(await chef.weeklyRewards(week0 + 2)).to.be.equal(0);
 
         await chef.checkpoint();
         expect(await chef.lastCheckpoint()).to.be.equal(week0 + 3);
-        // From week2, 10x boost gets away
-        weekly = onePercentDecreased(total.sub(locked)).div(10);
-        expect(await chef.weeklyRewards(week0 + 2)).to.be.equal(weekly);
+        expect(await chef.weeklyRewards(week0 + 2)).to.be.equal(REWARDS_PER_WEEK);
+        console.log("week2\t\t" + utils.formatEther(await chef.weeklyRewards(week0 + 2)));
 
-        total = total.add(weekly);
-        await fSushi.mint(alice.address, weekly);
+        await fSushi.mint(alice.address, REWARDS_PER_WEEK);
+        total = total.add(REWARDS_PER_WEEK);
         expect(await fSushi.totalSupply()).to.be.equal(total);
 
-        await mineAtWeekStart(week0 + 3);
-        expect(await chef.weeklyRewards(week0 + 3)).to.be.equal(0);
+        const rewards = async week => {
+            await fSushi.checkpoint();
+            const totalSupply = await fSushi.totalSupplyDuring(week - 1);
+            await fSushiBar.checkpoint();
+            const lockedAssets = await fSushiBar.totalAssetsDuring(week - 1);
 
-        await chef.checkpoint();
-        expect(await chef.lastCheckpoint()).to.be.equal(week0 + 4);
-        weekly = onePercentDecreased(total.sub(locked));
-        expect(await chef.weeklyRewards(week0 + 3)).to.be.equal(weekly);
+            let rewards = totalSupply.isZero()
+                ? BigNumber.from(0)
+                : REWARDS_PER_WEEK.mul(totalSupply.sub(lockedAssets)).div(totalSupply);
+            if (week - week0 > 2) {
+                rewards = onePercentDecreased(rewards);
+            }
+            return rewards;
+        };
+
+        for (let i = 3; i < 100; i++) {
+            const locked = REWARDS_FOR_INITIAL_WEEKS.div(10)
+                .mul(Math.floor(Math.random() * 100))
+                .div(100);
+            await fSushi.connect(alice).approve(fSushiBar.address, locked);
+            await fSushiBar.connect(alice).deposit(locked, 1, alice.address);
+            console.log("  locked\t" + utils.formatEther(locked));
+
+            await mineAtWeekStart(week0 + i);
+            expect(await chef.weeklyRewards(week0 + i)).to.be.equal(0);
+
+            await chef.checkpoint();
+            expect(await chef.lastCheckpoint()).to.be.equal(week0 + i + 1);
+
+            const weekly = await rewards(week0 + i);
+            expect(await chef.weeklyRewards(week0 + i)).to.be.equal(weekly);
+            console.log("week" + i + "\t\t" + utils.formatEther(await chef.weeklyRewards(week0 + i)));
+
+            await fSushi.mint(alice.address, weekly);
+            total = total.add(weekly);
+            expect(await fSushi.totalSupply()).to.be.equal(total);
+        }
     });
 });

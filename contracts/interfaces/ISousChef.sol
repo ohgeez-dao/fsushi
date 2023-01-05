@@ -13,10 +13,6 @@ interface ISousChef {
     event CreateBill(uint256 indexed pid, address indexed bill);
     event Checkpoint();
 
-    function BONUS_MULTIPLIER() external view returns (uint256);
-
-    function REWARDS_FOR_INITIAL_WEEK() external view returns (uint256);
-
     function fSushi() external view returns (address);
 
     function flashStrategyFactory() external view returns (address);

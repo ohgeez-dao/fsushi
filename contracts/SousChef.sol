@@ -19,9 +19,9 @@ contract SousChef is Ownable, ISousChef {
     using SafeCast for int256;
     using DateUtils for uint256;
 
-    uint256 public constant override BONUS_MULTIPLIER = 10;
-    uint256 public constant override REWARDS_FOR_INITIAL_WEEK = BONUS_MULTIPLIER * 30000e18;
-    uint256 internal constant FIRST_WEEK_SUPPLY = 3479005009049906983805;
+    uint256 internal constant BONUS_MULTIPLIER = 10;
+    uint256 internal constant REWARDS_PER_WEEK = 30000e18;
+    uint256 internal constant REWARDS_FOR_INITIAL_WEEKS = BONUS_MULTIPLIER * REWARDS_PER_WEEK;
 
     address public immutable override fSushi;
     address public immutable override flashStrategyFactory;
@@ -62,7 +62,7 @@ contract SousChef is Ownable, ISousChef {
         uint256 thisWeek = block.timestamp.toWeekNumber();
         startWeek = thisWeek;
         lastCheckpoint = thisWeek + 1;
-        weeklyRewards[thisWeek] = REWARDS_FOR_INITIAL_WEEK;
+        weeklyRewards[thisWeek] = REWARDS_FOR_INITIAL_WEEKS;
 
         FSushiBill bill = new FSushiBill();
         bill.initialize(0, address(0));
@@ -115,15 +115,7 @@ contract SousChef is Ownable, ISousChef {
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
             if (until <= week) break;
-            // last week's circulating supply becomes the total rewards in this week
-            uint256 circulatingSupply = _circulatingSupply(week - 1);
-            // emission rate decreases 1% every week
-            uint256 rewards = (circulatingSupply * 99) / 100;
-            // 10x bonus is given only for the first 2 weeks
-            if (week == startWeek + 2) {
-                rewards /= BONUS_MULTIPLIER;
-            }
-            weeklyRewards[week] = rewards;
+            weeklyRewards[week] = _rewards(week);
 
             unchecked {
                 ++i;
@@ -132,14 +124,22 @@ contract SousChef is Ownable, ISousChef {
         lastCheckpoint = until;
     }
 
-    function _circulatingSupply(uint256 week) internal returns (uint256) {
-        uint256 totalSupply = (week == startWeek)
-            ? FIRST_WEEK_SUPPLY
-            : IFSushi(fSushi).checkpointedTotalSupplyDuring(week);
-        uint256 totalAssets = (week == startWeek)
+    function _rewards(uint256 week) internal returns (uint256) {
+        if (week < startWeek + 2) return REWARDS_FOR_INITIAL_WEEKS;
+        if (week == startWeek + 2) return REWARDS_PER_WEEK;
+
+        uint256 totalSupply = IFSushi(fSushi).checkpointedTotalSupplyDuring(week - 1);
+        uint256 lockedAssets = IFSushiRestaurant(restaurant).checkpointedTotalAssetsDuring(week - 1);
+
+        uint256 rewards = (totalSupply == 0 || totalSupply < lockedAssets)
             ? 0
-            : IFSushiRestaurant(restaurant).checkpointedTotalAssetsDuring(week);
-        return totalSupply - totalAssets;
+            : (REWARDS_PER_WEEK * (totalSupply - lockedAssets)) / totalSupply;
+
+        // emission rate decreases 1% every week from week 3
+        if (week - startWeek > 2) {
+            rewards = (rewards * 99) / 100;
+        }
+        return rewards;
     }
 
     function mintFSushi(
