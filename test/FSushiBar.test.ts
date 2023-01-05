@@ -2,7 +2,7 @@ import { ethers, network } from "hardhat";
 import { expect } from "chai";
 import { FSushi, FSushiBar } from "../typechain-types";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
-import { DAY, mineAtWeekStart, toWeekNumber, WEEK } from "./utils/date-utils";
+import { DAY, toWeekNumber, WEEK } from "./utils/date-utils";
 import { constants } from "ethers";
 
 const ONE = ethers.constants.WeiPerEther;
@@ -56,11 +56,9 @@ describe("FSushiBar", function () {
         const deployTime = Math.floor(Date.UTC(2024, 0, 1) / 1000);
         const { alice, bob, carol, fSushi, fSushiBar } = await setupTest(deployTime);
 
-        const week0 = toWeekNumber(deployTime) + 1;
+        const week0 = toWeekNumber(deployTime);
         expect(await fSushiBar.startWeek()).to.be.equal(week0);
         expect(await fSushiBar.lastCheckpoint()).to.be.equal(week0);
-
-        await mineAtWeekStart(week0);
 
         expect(await fSushiBar.previewDeposit(MAXIMUM_AMOUNT, 1)).to.be.equal(ONE);
 
@@ -144,11 +142,9 @@ describe("FSushiBar", function () {
         const deployTime = Math.floor(Date.UTC(2024, 0, 1) / 1000);
         const { alice, fSushi, fSushiBar } = await setupTest(deployTime);
 
-        const week0 = toWeekNumber(deployTime) + 1;
+        const week0 = toWeekNumber(deployTime);
         expect(await fSushiBar.startWeek()).to.be.equal(week0);
         expect(await fSushiBar.lastCheckpoint()).to.be.equal(week0);
-
-        await mineAtWeekStart(week0);
 
         await fSushi.connect(alice).approve(fSushiBar.address, constants.MaxUint256);
         await fSushiBar.connect(alice).deposit(MAXIMUM_AMOUNT, 1, alice.address);
@@ -205,11 +201,9 @@ describe("FSushiBar", function () {
         const deployTime = Math.floor(Date.UTC(2024, 0, 1) / 1000);
         const { alice, bob, fSushi, fSushiBar } = await setupTest(deployTime);
 
-        const week0 = toWeekNumber(deployTime) + 1;
+        const week0 = toWeekNumber(deployTime);
         expect(await fSushiBar.startWeek()).to.be.equal(week0);
         expect(await fSushiBar.lastCheckpoint()).to.be.equal(week0);
-
-        await mineAtWeekStart(week0);
 
         expect(await fSushiBar.previewDeposit(ONE, MAXIMUM_WEEKS)).to.be.equal(ONE);
 

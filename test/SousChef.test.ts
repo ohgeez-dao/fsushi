@@ -10,6 +10,7 @@ import setupPeripherals from "./utils/setupPeripherals";
 import { BigNumber } from "ethers";
 
 const REWARDS_FOR_INITIAL_WEEK = BigNumber.from(10).pow(18).mul(300000);
+const FIRST_WEEK_SUPPLY = BigNumber.from("3479005009049906983805");
 
 const onePercentDecreased = (bn, repeat = 1) => {
     let result = bn;
@@ -74,7 +75,7 @@ describe("SousChef", function () {
         const deployTime = Math.floor(Date.UTC(2024, 0, 1) / 1000);
         const { tokens, sushi, chef } = await setupTest(deployTime);
 
-        const week0 = toWeekNumber(deployTime) + 1;
+        const week0 = toWeekNumber(deployTime);
         expect(await chef.startWeek()).to.be.equal(week0);
         expect(await chef.lastCheckpoint()).to.be.equal(week0 + 1);
 
@@ -102,7 +103,7 @@ describe("SousChef", function () {
         const deployTime = Math.floor(Date.UTC(2024, 0, 1) / 1000);
         const { alice, tokens, sushi, fSushi, fSushiBar, chef } = await setupTest(deployTime);
 
-        const week0 = toWeekNumber(deployTime) + 1;
+        const week0 = toWeekNumber(deployTime);
 
         const pid = 0;
         await sushi.factory.createPair(tokens.sushi.address, tokens.weth.address);
@@ -110,11 +111,10 @@ describe("SousChef", function () {
         await sushi.chef.add(100, lpToken, false);
         await chef.createBill(pid);
 
-        await mineAtWeekStart(week0);
         expect(await chef.weeklyRewards(week0)).to.be.equal(REWARDS_FOR_INITIAL_WEEK);
 
-        let total = REWARDS_FOR_INITIAL_WEEK;
-        await fSushi.mint(alice.address, REWARDS_FOR_INITIAL_WEEK);
+        let total = FIRST_WEEK_SUPPLY;
+        await fSushi.mint(alice.address, FIRST_WEEK_SUPPLY);
         expect(await fSushi.totalSupply()).to.be.equal(total);
 
         await mineAtWeekStart(week0 + 1);
@@ -122,10 +122,10 @@ describe("SousChef", function () {
 
         await chef.checkpoint();
         expect(await chef.lastCheckpoint()).to.be.equal(week0 + 2);
-        let weekly = onePercentDecreased(REWARDS_FOR_INITIAL_WEEK);
+        let weekly = onePercentDecreased(total);
         expect(await chef.weeklyRewards(week0 + 1)).to.be.equal(weekly);
 
-        const locked = REWARDS_FOR_INITIAL_WEEK.div(2);
+        const locked = total.div(2);
         await fSushi.connect(alice).approve(fSushiBar.address, locked);
         await fSushiBar.connect(alice).deposit(locked, 1, alice.address);
 

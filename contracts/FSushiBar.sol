@@ -54,9 +54,9 @@ contract FSushiBar is IFSushiBar {
     constructor(address fSushi) {
         asset = fSushi;
 
-        uint256 nextWeek = block.timestamp.toWeekNumber() + 1;
-        startWeek = nextWeek;
-        lastCheckpoint = nextWeek;
+        uint256 thisWeek = block.timestamp.toWeekNumber();
+        startWeek = thisWeek;
+        lastCheckpoint = thisWeek;
     }
 
     function previewDeposit(uint256 assets, uint256 _weeks)
