@@ -125,7 +125,7 @@ contract FSushiBar is IFSushiBar {
         uint256 assets,
         uint256 _weeks,
         address beneficiary
-    ) public override returns (uint256) {
+    ) public override validWeeks(_weeks) returns (uint256) {
         if (assets > maxDeposit()) revert Bankrupt();
 
         uint256 shares = previewDeposit(assets, _weeks);
