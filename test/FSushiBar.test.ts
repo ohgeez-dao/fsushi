@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { FSushi, FSushiBar } from "../typechain-types";
 import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { DAY, mineAtWeekStart, toWeekNumber, WEEK } from "./utils/date-utils";
+import { constants } from "ethers";
 
 const ONE = ethers.constants.WeiPerEther;
 const MAXIMUM_WEEKS = 104;
@@ -121,19 +122,83 @@ describe("FSushiBar", function () {
         expect(await fSushiBar.totalAssets()).to.be.approximately(MAXIMUM_AMOUNT.div(3), DELTA);
         expect(await fSushiBar.totalAssetsDuring(week1)).to.be.approximately(MAXIMUM_AMOUNT.div(3), DELTA);
 
-        // await fSushi.connect(alice).approve(fSushiBar.address, ONE);
-        // await fSushiBar.connect(alice).deposit(ONE, alice.address);
-        // expect(await fSushiBar.totalAssetsDuring(week1)).to.be.equal(ONE);
-        //
-        // await time.increase(WEEK * 10);
-        // for (let i = 0; i < 10; i++) {
-        //     expect(await fSushiBar.totalAssetsDuring(week1 + i + 1)).to.be.equal(0);
-        // }
-        //
-        // await fSushiBar.checkpoint();
-        // for (let i = 0; i < 10; i++) {
-        //     expect(await fSushiBar.totalAssetsDuring(week1 + i + 1)).to.be.equal(ONE);
-        // }
+        await fSushi.connect(alice).approve(fSushiBar.address, ONE);
+        await fSushiBar.connect(alice).deposit(ONE, MAXIMUM_WEEKS, alice.address);
+        expect(await fSushiBar.totalAssetsDuring(week1)).to.be.approximately(MAXIMUM_AMOUNT.div(3).add(ONE), DELTA);
+
+        await time.increase(WEEK * 10);
+        for (let i = 0; i < 10; i++) {
+            expect(await fSushiBar.totalAssetsDuring(week1 + i + 1)).to.be.equal(0);
+        }
+
+        await fSushiBar.checkpoint();
+        for (let i = 0; i < 10; i++) {
+            expect(await fSushiBar.totalAssetsDuring(week1 + i + 1)).to.be.approximately(
+                MAXIMUM_AMOUNT.div(3).add(ONE),
+                DELTA
+            );
+        }
+    });
+
+    it("should deposit/withdraw multiple times", async function () {
+        const deployTime = Math.floor(Date.UTC(2024, 0, 1) / 1000);
+        const { alice, fSushi, fSushiBar } = await setupTest(deployTime);
+
+        const week0 = toWeekNumber(deployTime) + 1;
+        expect(await fSushiBar.startWeek()).to.be.equal(week0);
+        expect(await fSushiBar.lastCheckpoint()).to.be.equal(week0);
+
+        await mineAtWeekStart(week0);
+
+        await fSushi.connect(alice).approve(fSushiBar.address, constants.MaxUint256);
+        await fSushiBar.connect(alice).deposit(MAXIMUM_AMOUNT, 1, alice.address);
+        // deposit1: 1
+        expect(await fSushiBar.balanceOf(alice.address)).to.be.equal(ONE);
+        expect(await fSushiBar.totalSupply()).to.be.equal(ONE);
+
+        await time.increase(WEEK * 4);
+        await fSushiBar.connect(alice).deposit(ONE, MAXIMUM_WEEKS, alice.address);
+        // deposit2: 1 + 1 = 2
+        expect(await fSushiBar.balanceOf(alice.address)).to.be.equal(ONE.mul(2));
+        expect(await fSushiBar.totalSupply()).to.be.equal(ONE.mul(2));
+        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [ONE, MAXIMUM_AMOUNT, 0]);
+
+        await fSushi.transfer(fSushiBar.address, ONE);
+        await fSushiBar.checkpoint();
+        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [ONE, MAXIMUM_AMOUNT, ONE.div(2)]);
+
+        await time.increase(WEEK * 4);
+        await fSushiBar.connect(alice).deposit(MAXIMUM_AMOUNT, 3, alice.address);
+        // deposit3: 2 + 3 * 2 / 3 = 4
+        expect(await fSushiBar.balanceOf(alice.address)).to.be.equal(ONE.mul(4));
+        expect(await fSushiBar.totalSupply()).to.be.equal(ONE.mul(4));
+
+        await time.increase(WEEK * 4);
+        // deposit1 and deposit3 are withdrawable
+        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [
+            ONE.mul(3),
+            MAXIMUM_AMOUNT.mul(2),
+            ONE.mul(3).div(4),
+        ]);
+        // withdraw deposit1 and deposit3
+        let balance = await fSushi.balanceOf(alice.address);
+        await fSushiBar.connect(alice).withdraw(alice.address);
+        expect((await fSushi.balanceOf(alice.address)).sub(balance)).to.be.equal(
+            MAXIMUM_AMOUNT.mul(2).add(ONE.mul(3).div(4))
+        );
+
+        await expect(fSushiBar.connect(alice).withdraw(alice.address)).to.be.revertedWithCustomError(
+            fSushiBar,
+            "WithdrawalDenied"
+        );
+
+        await time.increase(WEEK * MAXIMUM_WEEKS);
+        // deposit2 is withdrawable
+        expectDeepApproximately(await fSushiBar.previewWithdraw(alice.address), [ONE, ONE, ONE.div(4)]);
+
+        balance = await fSushi.balanceOf(alice.address);
+        await fSushiBar.connect(alice).withdraw(alice.address);
+        expect((await fSushi.balanceOf(alice.address)).sub(balance)).to.be.equal(ONE.add(ONE.div(4)));
     });
 
     it("should deposit/withdraw in dynamic situation", async function () {
