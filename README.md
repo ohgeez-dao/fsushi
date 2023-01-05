@@ -2,6 +2,22 @@
 
 fSUSHI is a protocol built on top of [FlashStake](http://flashstake.io/) and [SushiSwap](https://sushi.com) that enables stakers to get instant, upfront yield without waiting for it to accrue.
 
+## Deployments
+
+### Mainnet
+
+| Contract                      | Address                                                                                                               |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| FSushi                        | [0xA24390c62186A8D265344e914F0Fd962B81b5F13](https://etherscan.io/address/0xA24390c62186A8D265344e914F0Fd962B81b5F13) |
+| FSushiAirdrops                | [0x4909B5a6Fbd15884fed4F5D1Af829AF5e9bc8e28](https://etherscan.io/address/0x4909B5a6Fbd15884fed4F5D1Af829AF5e9bc8e28) |
+| FSushiAirdropsVotingEscrow    | [0x7C375121690Bd65295B33c526F39dA1BAEDcFC97](https://etherscan.io/address/0x7C375121690Bd65295B33c526F39dA1BAEDcFC97) |
+| SushiBarVault                 | [0x3e55AC0E6724BBe8aB40a60771B5D60fC8e93404](https://etherscan.io/address/0x3e55AC0E6724BBe8aB40a60771B5D60fC8e93404) |
+| FarmingLPTokenFactory         | [0xEE083E0F0f5dE2ff34662F1ef6f76d897d5047EF](https://etherscan.io/address/0xEE083E0F0f5dE2ff34662F1ef6f76d897d5047EF) |
+| FlashStrategySushiSwapFactory | [0x77b8E6e577fd3e90553dbF205D3854a649414741](https://etherscan.io/address/0x77b8E6e577fd3e90553dbF205D3854a649414741) |
+| FSushiBar                     | [0x8f77a1f6D36c6F3005B33E4071733C7057463Ca5](https://etherscan.io/address/0x8f77a1f6D36c6F3005B33E4071733C7057463Ca5) |
+| FSushiKitchen                 | [0xe4CC24Fa7bbcCD83cF10a20760B1b842Cb750421](https://etherscan.io/address/0xe4CC24Fa7bbcCD83cF10a20760B1b842Cb750421) |
+| SousChef                      | [0x5d8F31F88DBd4B05c3e5Fb60743aF281259E64b8](https://etherscan.io/address/0x5d8F31F88DBd4B05c3e5Fb60743aF281259E64b8) |
+
 ## How it works
 
 ```
