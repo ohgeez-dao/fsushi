@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "./interfaces/ISousChef.sol";
 import "./interfaces/IFSushi.sol";
+import "./interfaces/IFSushiRestaurant.sol";
 import "./interfaces/IFlashStrategySushiSwapFactory.sol";
 import "./interfaces/IFlashStrategySushiSwap.sol";
 import "./FSushiBill.sol";
