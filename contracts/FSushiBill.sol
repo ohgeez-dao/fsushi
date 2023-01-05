@@ -6,9 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./base/BaseERC20.sol";
 import "./interfaces/IFSushiBill.sol";
 import "./interfaces/ISousChef.sol";
-import "./interfaces/IFSushiRestaurant.sol";
 import "./interfaces/IFSushiKitchen.sol";
-import "./interfaces/IFSushi.sol";
 import "./libraries/DateUtils.sol";
 
 contract FSushiBill is BaseERC20, IFSushiBill {

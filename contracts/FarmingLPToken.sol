@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
-import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IFarmingLPToken.sol";
 import "./interfaces/IFarmingLPTokenFactory.sol";
 import "./interfaces/IFarmingLPTokenMigrator.sol";
