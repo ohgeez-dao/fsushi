@@ -39,8 +39,8 @@ jobs:
     - name: Installing dependencies
       run: yarn install --frozen-lockfile
 
-    - name: yarn test:coverage
-      run: yarn test:coverage
+    - name: yarn test
+      run: yarn test
 
     - name: Coveralls
       uses: coverallsapp/github-action@master
