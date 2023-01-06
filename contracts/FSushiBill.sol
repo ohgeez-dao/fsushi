@@ -13,8 +13,6 @@ contract FSushiBill is BaseERC20, IFSushiBill {
     using SafeERC20 for IERC20;
     using DateUtils for uint256;
 
-    uint256 internal constant TOKENLESS_PRODUCTION = 40;
-
     address public override sousChef;
     uint256 public override pid;
     address public override fToken;
@@ -157,11 +155,10 @@ contract FSushiBill is BaseERC20, IFSushiBill {
     function claimRewards(address beneficiary) external {
         userCheckpoint(msg.sender);
 
-        uint256 prevWeek = nextClaimableWeek[msg.sender];
-        if (prevWeek == block.timestamp) return;
-        if (prevWeek == 0) {
-            uint256 startWeek = ISousChef(sousChef).startWeek();
-            prevWeek = startWeek.toTimestamp();
+        uint256 from = nextClaimableWeek[msg.sender];
+        if (from == block.timestamp.toWeekNumber()) return;
+        if (from == 0) {
+            from = ISousChef(sousChef).startWeek();
         }
 
         (address _sousChef, uint256 _pid) = (sousChef, pid);
@@ -170,14 +167,15 @@ contract FSushiBill is BaseERC20, IFSushiBill {
 
         // add week-by-week rewards until the last week
         uint256 totalRewards;
-        uint256 from = prevWeek.toWeekNumber();
         uint256 to = block.timestamp.toWeekNumber(); // exclusive last index
         for (uint256 i; i < 512; ) {
             uint256 week = from + i;
             if (to <= week) break;
             uint256 weeklyRewards = ISousChef(_sousChef).weeklyRewards(week);
-            uint256 weight = IFSushiKitchen(kitchen).relativeWeightAt(_pid, week.toTimestamp());
-            uint256 rewards = (weeklyRewards * weight * userPoints[msg.sender][week]) / points[week] / 1e18;
+            uint256 weight = IFSushiKitchen(kitchen).relativeWeightAt(_pid, (week + 1).toTimestamp());
+            uint256 rewards = points[week] == 0
+                ? 0
+                : (weeklyRewards * weight * userPoints[msg.sender][week]) / points[week] / 1e18;
             totalRewards += rewards;
 
             unchecked {
