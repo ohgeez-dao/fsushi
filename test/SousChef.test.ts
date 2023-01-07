@@ -9,7 +9,7 @@ import setupFlashStake from "./utils/setupFlashStake";
 import setupPeripherals from "./utils/setupPeripherals";
 import { BigNumber, utils } from "ethers";
 
-const REWARDS_PER_WEEK = BigNumber.from(10).pow(18).mul(30000);
+const REWARDS_PER_WEEK = BigNumber.from(10).pow(18).mul(3000);
 const REWARDS_FOR_INITIAL_WEEKS = REWARDS_PER_WEEK.mul(10);
 
 const onePercentDecreased = (bn, repeat = 1) => {

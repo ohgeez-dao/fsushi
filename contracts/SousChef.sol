@@ -19,7 +19,7 @@ contract SousChef is Ownable, ISousChef {
     using DateUtils for uint256;
 
     uint256 internal constant BONUS_MULTIPLIER = 10;
-    uint256 internal constant REWARDS_PER_WEEK = 30000e18;
+    uint256 internal constant REWARDS_PER_WEEK = 3000e18;
     uint256 internal constant REWARDS_FOR_INITIAL_WEEKS = BONUS_MULTIPLIER * REWARDS_PER_WEEK;
 
     address public immutable override fSushi;
