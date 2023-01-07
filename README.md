@@ -16,7 +16,7 @@ fSUSHI is a protocol built on top of [FlashStake](http://flashstake.io/) and [Su
 | FlashStrategySushiSwapFactory | [0x77b8E6e577fd3e90553dbF205D3854a649414741](https://etherscan.io/address/0x77b8E6e577fd3e90553dbF205D3854a649414741) |
 | FSushiBar                     | [0x8f77a1f6D36c6F3005B33E4071733C7057463Ca5](https://etherscan.io/address/0x8f77a1f6D36c6F3005B33E4071733C7057463Ca5) |
 | FSushiKitchen                 | [0xe4CC24Fa7bbcCD83cF10a20760B1b842Cb750421](https://etherscan.io/address/0xe4CC24Fa7bbcCD83cF10a20760B1b842Cb750421) |
-| SousChef                      | [0x5d8F31F88DBd4B05c3e5Fb60743aF281259E64b8](https://etherscan.io/address/0x5d8F31F88DBd4B05c3e5Fb60743aF281259E64b8) |
+| SousChef                      | [0x9220EF478fd8a05EdF4f56c9311FE070B42DFdfa](https://etherscan.io/address/0x9220EF478fd8a05EdF4f56c9311FE070B42DFdfa) |
 
 ## How it works
 
