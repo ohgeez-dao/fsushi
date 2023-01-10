@@ -26,7 +26,7 @@ interface IFSushiKitchen {
 
     function relativeWeightAt(uint256 pid, uint256 timestamp) external view returns (uint256);
 
-    function addPool(uint256 pid, uint256 points) external;
+    function addPool(uint256 pid) external;
 
     function updateWeight(uint256 pid, uint256 points) external;
 
