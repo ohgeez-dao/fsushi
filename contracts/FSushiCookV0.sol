@@ -73,8 +73,8 @@ contract FSushiCookV0 {
         uint256 amountFLP = IFarmingLPToken(flpToken).balanceOf(address(this));
         address strategy = IFlashStrategySushiSwapFactory(flashStrategyFactory).getFlashStrategySushiSwap(pid);
 
-        IERC20(flpToken).approve(strategy, amountFLP);
         address protocol = IFlashStrategySushiSwap(strategy).flashProtocol();
+        IERC20(flpToken).approve(protocol, amountFLP);
         (, , , , , , , uint256 fTokensToUser, , , ) = IFlashProtocol_(protocol).stake(
             strategy,
             amountFLP,
