@@ -7,7 +7,7 @@ fSUSHI is a protocol built on top of [FlashStake](http://flashstake.io/) and [Su
 ### Mainnet
 
 | Contract                      | Address                                                                                                               |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+|-------------------------------| --------------------------------------------------------------------------------------------------------------------- |
 | FSushi                        | [0xA24390c62186A8D265344e914F0Fd962B81b5F13](https://etherscan.io/address/0xA24390c62186A8D265344e914F0Fd962B81b5F13) |
 | FSushiAirdrops                | [0x4909B5a6Fbd15884fed4F5D1Af829AF5e9bc8e28](https://etherscan.io/address/0x4909B5a6Fbd15884fed4F5D1Af829AF5e9bc8e28) |
 | FSushiAirdropsVotingEscrow    | [0x7C375121690Bd65295B33c526F39dA1BAEDcFC97](https://etherscan.io/address/0x7C375121690Bd65295B33c526F39dA1BAEDcFC97) |
@@ -17,6 +17,7 @@ fSUSHI is a protocol built on top of [FlashStake](http://flashstake.io/) and [Su
 | FSushiBar                     | [0x8f77a1f6D36c6F3005B33E4071733C7057463Ca5](https://etherscan.io/address/0x8f77a1f6D36c6F3005B33E4071733C7057463Ca5) |
 | FSushiKitchen                 | [0xe4CC24Fa7bbcCD83cF10a20760B1b842Cb750421](https://etherscan.io/address/0xe4CC24Fa7bbcCD83cF10a20760B1b842Cb750421) |
 | SousChef                      | [0x991660133a987F21c6225027C33B9B5680272850](https://etherscan.io/address/0x991660133a987F21c6225027C33B9B5680272850) |
+| FSushiCookV0                  | [0xd7Ed9a4d7DC7Ce4066d0e32FF993bf59c89e3648](https://etherscan.io/address/0xd7Ed9a4d7DC7Ce4066d0e32FF993bf59c89e3648) |
 
 ## How it works
 
