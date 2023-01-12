@@ -15,7 +15,7 @@ fSUSHI is a protocol built on top of [FlashStake](http://flashstake.io/) and [Su
 | FarmingLPTokenFactory         | [0xEE083E0F0f5dE2ff34662F1ef6f76d897d5047EF](https://etherscan.io/address/0xEE083E0F0f5dE2ff34662F1ef6f76d897d5047EF) |
 | FlashStrategySushiSwapFactory | [0x77b8E6e577fd3e90553dbF205D3854a649414741](https://etherscan.io/address/0x77b8E6e577fd3e90553dbF205D3854a649414741) |
 | FSushiBar                     | [0x8f77a1f6D36c6F3005B33E4071733C7057463Ca5](https://etherscan.io/address/0x8f77a1f6D36c6F3005B33E4071733C7057463Ca5) |
-| FSushiKitchen                 | [0xe4CC24Fa7bbcCD83cF10a20760B1b842Cb750421](https://etherscan.io/address/0xe4CC24Fa7bbcCD83cF10a20760B1b842Cb750421) |
+| FSushiKitchen                 | [0x99cf6EA7bCCCc53B11209Dc32432a7427DA906E9](https://etherscan.io/address/0x99cf6EA7bCCCc53B11209Dc32432a7427DA906E9) |
 | SousChef                      | [0x991660133a987F21c6225027C33B9B5680272850](https://etherscan.io/address/0x991660133a987F21c6225027C33B9B5680272850) |
 | FSushiCookV0                  | [0xd7Ed9a4d7DC7Ce4066d0e32FF993bf59c89e3648](https://etherscan.io/address/0xd7Ed9a4d7DC7Ce4066d0e32FF993bf59c89e3648) |
 
