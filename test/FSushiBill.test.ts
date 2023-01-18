@@ -67,7 +67,8 @@ const setupTest = async deployTimestamp => {
         const FSB = await ethers.getContractFactory("FSushiBill");
         const bill = FSB.attach(address) as FSushiBill;
 
-        await fSushiKitchen.addPool(pid, weight);
+        await fSushiKitchen.addPool(pid);
+        await fSushiKitchen.updateWeight(pid, weight);
 
         return { pid, lpToken, strategy, flpToken, fToken, bill };
     };

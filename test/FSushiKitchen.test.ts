@@ -49,13 +49,14 @@ describe("FSushiKitchen", function () {
 
         const { pid } = await createFlashStrategySushiSwap(tokens.sushi, tokens.weth, 100);
 
-        await fSushiKitchen.addPool(pid, ONE.mul(3));
+        await fSushiKitchen.addPool(pid);
+        await fSushiKitchen.updateWeight(pid, ONE.mul(3));
         expect(await fSushiKitchen.totalWeightPoints()).to.be.equal(ONE.mul(3));
         expect(await fSushiKitchen.weightPoints(pid)).to.be.equal(ONE.mul(3));
         expect(await fSushiKitchen.relativeWeight(pid)).to.be.equal(ONE);
 
-        expect(await fSushiKitchen.totalWeightPointsLength()).to.be.equal(1);
-        expect(await fSushiKitchen.weightPointsLength(pid)).to.be.equal(1);
+        expect(await fSushiKitchen.totalWeightPointsLength()).to.be.equal(2);
+        expect(await fSushiKitchen.weightPointsLength(pid)).to.be.equal(2);
 
         const now = await time.latest();
         expect(await fSushiKitchen.totalWeightPointsAt(now)).to.be.equal(ONE.mul(3));
@@ -69,8 +70,10 @@ describe("FSushiKitchen", function () {
         const { pid: pid0 } = await createFlashStrategySushiSwap(tokens.sushi, tokens.weth, 100);
         const { pid: pid1 } = await createFlashStrategySushiSwap(tokens.usdc, tokens.weth, 100);
 
-        await fSushiKitchen.addPool(pid0, ONE.mul(3));
-        await fSushiKitchen.addPool(pid1, ONE.mul(1));
+        await fSushiKitchen.addPool(pid0);
+        await fSushiKitchen.updateWeight(pid0, ONE.mul(3));
+        await fSushiKitchen.addPool(pid1);
+        await fSushiKitchen.updateWeight(pid1, ONE.mul(1));
 
         expect(await fSushiKitchen.totalWeightPoints()).to.be.equal(ONE.mul(4));
         expect(await fSushiKitchen.weightPoints(pid0)).to.be.equal(ONE.mul(3));
@@ -78,9 +81,9 @@ describe("FSushiKitchen", function () {
         expect(await fSushiKitchen.relativeWeight(pid0)).to.be.equal(ONE.mul(3).div(4));
         expect(await fSushiKitchen.relativeWeight(pid1)).to.be.equal(ONE.div(4));
 
-        expect(await fSushiKitchen.totalWeightPointsLength()).to.be.equal(2);
-        expect(await fSushiKitchen.weightPointsLength(pid0)).to.be.equal(1);
-        expect(await fSushiKitchen.weightPointsLength(pid1)).to.be.equal(1);
+        expect(await fSushiKitchen.totalWeightPointsLength()).to.be.equal(4);
+        expect(await fSushiKitchen.weightPointsLength(pid0)).to.be.equal(2);
+        expect(await fSushiKitchen.weightPointsLength(pid1)).to.be.equal(2);
 
         await fSushiKitchen.updateWeight(pid1, ONE.mul(2));
         expect(await fSushiKitchen.weightPoints(pid1)).to.be.equal(ONE.mul(2));
